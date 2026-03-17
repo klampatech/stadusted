@@ -1,8 +1,8 @@
 # Stardust Implementation Plan
 
-> **Status:** Implementation Near Complete - Final Gaps Identified
+> **Status:** Implementation Near Complete
 > **Last Updated:** 2026-03-17
-> **Goal:** Complete all acceptance criteria (55 tests) with 100% pass rate
+> **Goal:** Complete all acceptance criteria with 100% pass rate
 
 ---
 
@@ -18,199 +18,126 @@ The project implements a Godot 4.6 GDExtension with:
 
 ---
 
-## Gap Analysis Summary
+## Implementation Status Summary
 
-### Phase 1: Core Engine (11 tests)
-| Test | Requirement | Status | Notes |
-|------|-------------|--------|-------|
-| T1.1.1 | ElementType enum (22 types) | ✅ Complete | All types defined in FallingSandEngine.h |
-| T1.1.2 | Element colors | ⚠️ Partial | Colors defined, set_element_color needs storage |
-| T1.1.3 | Element properties | ✅ Complete | Density, flammability, conductivity implicitly defined |
-| T1.2.1 | Double buffering | ✅ Complete | currentBuffer/nextBuffer in Grid class |
-| T1.2.2 | Memory layout | ✅ Complete | 500x500 = 250KB per buffer |
-| T1.2.3 | Row-major order | ✅ Complete | y * width + x indexing |
-| T1.2.4 | Bounds checking | ✅ Complete | getCell/setCell validate coordinates |
-| T1.3.1 | SAND behavior | ✅ Complete | Falls, piles at 45° |
-| T1.3.2 | WATER behavior | ✅ Complete | Falls, flows horizontally |
-| T1.3.3 | FIRE behavior | ✅ Complete | Rises, dies over time, ignites |
-| T1.3.4 | SMOKE behavior | ✅ Complete | Rises, disperses |
-| T1.3.5 | WOOD behavior | ✅ Complete | Static, catches fire |
-| T1.3.6 | OIL behavior | ✅ Complete | Liquid + flammable |
-| T1.3.7 | ACID behavior | ✅ Complete | Dissolves destructibles |
-| T1.3.8 | GUNPOWDER behavior | ✅ Complete | Falls, explodes when ignited |
+| Phase | Tests | Complete | Notes |
+|-------|-------|----------|-------|
+| Phase 1: Core Engine | 15 | ✅ | All element types and physics behaviors implemented |
+| Phase 2: Black Hole | 17 | ✅ | Physics, API methods all complete |
+| Phase 3: Simulation Node | 14 | ✅ | Properties, methods, signals bound |
+| Phase 4: Planet Destruction | 10 | ✅ | Generation, stress, debris complete |
+| Phase 5: Performance | 4 | ⚠️ | Needs runtime verification |
+| Phase 6: Build & Integration | 4 | ⚠️ | Missing product info in manifest |
 
-### Phase 2: Black Hole Engine (15 tests)
-| Test | Requirement | Status | Notes |
-|------|-------------|--------|-------|
-| T2.1.1 | BlackHole struct | ✅ Complete | x, y, mass, event_horizon, influence_radius, active |
-| T2.1.2 | Default constants | ✅ Complete | DEFAULT_MASS=1000, EVENT_HORIZON=8, INFLUENCE=150 |
-| T2.1.3 | Mass bounds | ✅ Complete | MIN=100, MAX=10000 enforced |
-| T2.1.4 | Max black holes | ✅ Complete | MAX_BLACK_HOLES=16 |
-| T2.2.1 | Inverse-square law | ✅ Complete | G=6.674, damping=0.5 |
-| T2.2.2-3 | Direction/falloff | ✅ Complete | Normalized vector output |
-| T2.2.4 | Force clamping | ✅ Complete | Max force = 2.0 |
-| T2.2.5 | Influence cutoff | ✅ Complete | No force beyond radius |
-| T2.2.6 | Multiple black holes | ✅ Complete | Forces summed vectorially |
-| T2.3.1 | Event horizon consumption | ✅ Complete | Elements set to EMPTY |
-| T2.3.2-3 | Index returns | ✅ Complete | Returns index or -1 |
-| T2.4.1 | add_black_hole | ✅ Complete | Returns index 0-15 |
-| T2.4.2 | remove_black_hole | ✅ Complete | Marks inactive |
-| T2.4.3-4 | Position/mass setters | ✅ Complete | Both implemented |
-| T2.4.5 | get_black_hole_count | ✅ Complete | Returns active count |
-| T2.4.6 | get_black_hole_info | ⚠️ Partial | Returns Dictionary but may have issues |
-| T2.4.7 | clear_all_black_holes | ✅ Complete | Clears vector |
-| T2.4.8 | set_black_holes_enabled | ✅ Complete | Global enable/disable |
-
-### Phase 3: FallingSandSimulation Node (14 tests)
-| Test | Requirement | Status | Notes |
-|------|-------------|--------|-------|
-| T3.1.1 | grid_width | ✅ Complete | Default 500, range 100-2000 |
-| T3.1.2 | grid_height | ✅ Complete | Default 500, range 100-2000 |
-| T3.1.3 | cell_scale | ✅ Complete | Default 4 |
-| T3.1.4 | simulation_paused | ✅ Complete | Boolean default false |
-| T3.1.5 | time_scale | ✅ Complete | Float 0.1-10.0 default 1.0 |
-| T3.2.1 | spawn_element | ✅ Complete | x, y, type, radius |
-| T3.2.2 | spawn_element_at_world | ✅ Complete | Bound in _bind_methods |
-| T3.2.3 | erase_element | ✅ Complete | x, y, radius |
-| T3.2.4 | erase_element_at_world | ✅ Complete | Bound in _bind_methods |
-| T3.2.5 | get_element_at | ✅ Complete | Returns EMPTY for OOB |
-| T3.2.6 | get_element_at_world | ✅ Complete | Bound in _bind_methods |
-| T3.2.7 | fill_rect | ✅ Complete | x, y, w, h, type |
-| T3.2.8 | fill_circle | ✅ Complete | cx, cy, radius, type |
-| T3.3.1 | clear_grid | ✅ Complete | Sets all to EMPTY |
-| T3.3.2 | generate_planet | ✅ Complete | 3-layer planet |
-| T3.3.3 | generate_mining_world | ✅ Complete | Bound in _bind_methods |
-| T3.4.1 | grid_texture | ✅ Complete | Returns ImageTexture |
-| T3.4.2 | is_texture_dirty | ✅ Complete | Dirty flag implemented |
-| T3.4.3 | get_grid_texture | ✅ Complete | Returns valid ImageTexture |
-| T3.5.1 | element_changed signal | ✅ Complete | Emitting at line 287, 317 |
-| T3.5.2 | simulation_stepped signal | ✅ Complete | Emitting at line 106 |
-| T3.5.3 | black_hole_consumed signal | ✅ Complete | Emitting at line 79, 134 |
-| T3.5.4 | planet_destroyed signal | ✅ Complete | Emitting at line 90, 145 |
-| T3.6.1 | ups | ✅ Complete | Calculated from frame_count/time |
-| T3.6.2 | frame_count | ✅ Complete | Increments each step |
-| T3.6.3 | get_element_count | ✅ Complete | Returns count by type |
-
-### Phase 4: Planet Destruction (5 tests)
-| Test | Requirement | Status | Notes |
-|------|-------------|--------|-------|
-| T4.1.1 | Layered generation | ✅ Complete | 3 distinct layers |
-| T4.1.2 | PLANET_CORE | ✅ Complete | dist <= r/4 |
-| T4.1.3 | PLANET_MANTLE | ✅ Complete | dist <= r/2 |
-| T4.1.4 | PLANET_CRUST | ✅ Complete | dist <= r |
-| T4.2.1 | Stress accumulation | ✅ Complete | Force-based stress |
-| T4.2.2 | Crust breaks first | ✅ Complete | threshold=0.3 |
-| T4.2.3 | Mantle breaks second | ✅ Complete | threshold=0.6 |
-| T4.2.4 | Core hardest | ✅ Complete | threshold=1.0 |
-| T4.2.5 | Debris spawning | ✅ Complete | Converts to stone/sand |
-
-### Phase 5: Performance (5 tests)
-| Test | Requirement | Status | Notes |
-|------|-------------|--------|-------|
-| T5.1.1 | 500x500 @ 60fps | ✅ Expected | Should meet target |
-| T5.1.2 | 1000x1000 @ 60fps | ❌ Unverified | GPU path not tested |
-| T5.2.1 | 500x500 memory <=3MB | ✅ Expected | ~2.5MB budget |
-| T5.2.2 | 1000x1000 memory <=12MB | ✅ Expected | ~10MB budget |
-| T5.3.1 | Sim step < 8ms | ❌ Unverified | No timing tests |
-| T5.3.2 | Texture upload < 4ms | ❌ Unverified | No timing tests |
-
-### Phase 6: Build & Integration (5 tests)
-| Test | Requirement | Status | Notes |
-|------|-------------|--------|-------|
-| T6.1.1 | CMake build | ✅ Complete | Produces shared library |
-| T6.1.2 | Debug build | ✅ Complete | Debug symbols work |
-| T6.1.3 | Release build | ✅ Complete | Optimized binary |
-| T6.2.1 | Entry point | ✅ Complete | extension.gdextension |
-| T6.2.2 | API version | ✅ Complete | Godot 4.2, 4.3 |
-| T6.2.3 | Product info | ❌ Missing | product_name, product_version not in manifest |
-| T6.3.1 | Node registration | ✅ Complete | Node2D subclass |
-| T6.3.2 | Property export | ✅ Complete | 9 properties exported |
-| T6.3.3 | Signal connection | ✅ Complete | All signals connectable |
-| T6.3.4 | Scene usage | ✅ Complete | Renders texture |
+**Total: 82 tests across 6 phases**
 
 ---
 
-## Priority 1: Extension Manifest (Blocking Final Spec Compliance)
+## Remaining Tasks (Prioritized)
 
-### Task 1.1: Add product info to extension.gdextension
+### Task 1: Fix Extension Manifest (Blocking)
 - **Files:** `extension.gdextension`
-- **Issue:** Missing product_name and product_version
-- **Fix:** Add `[project]` section with:
-  ```ini
-  product_name = "Falling Sand Simulation"
-  product_version = "1.0.0"
-  ```
-- **Verification:** Check file contains both fields
+- **Issue:** Missing product_name, product_version, and incomplete API version
+- **Fix:** Update to:
+```ini
+[configuration]
 
----
+entry_symbol = "godot_falling_sand_gdextension_init"
+compatibility_minimum = "4.2"
+compatibility_maximum = "4.6"
 
-## Priority 2: Performance Verification (Phase 5)
+[project]
 
-### Task 3.1: Implement custom element color storage
+product_name = "Falling Sand Simulation"
+product_version = "1.0.0"
+
+[libraries]
+
+macos.debug = "res://addons/godot_falling_sand/libgodot_falling_sand.dylib"
+macos.release = "res://addons/godot_falling_sand/libgodot_falling_sand.dylib"
+```
+
+### Task 2: Implement Custom Element Color Storage
 - **Files:** `src/godot_extension/FallingSandSimulation.h`, `.cpp`
-- **Issue:** set_element_color is stub
-- **Fix:** Add unordered_map for custom colors
+- **Issue:** `set_element_color` is stub - needs storage
+- **Fix:** Add `std::unordered_map<int, Color>` for custom colors
 
-### Task 3.2: Modify get_color_for_element to use custom colors
-- **Files:** `src/godot_extension/FallingSandSimulation.cpp`
-- **Fix:** Check custom map before default colors
+### Task 3: Run Performance Verification
+- **Test 3.1:** 500x500 grid + 16 black holes, verify FPS ≥ 60
+- **Test 3.2:** Measure simulation step time, target < 8ms
+- **Test 3.3:** Measure texture upload time, target < 4ms
+- **Test 3.4:** Verify memory: 500x500 ≤ 3MB, 1000x1000 ≤ 12MB
 
----
-
-## Priority 4: Property Export Verification
-
-### Task 4.1: Verify all properties exported in Inspector
-- **Files:** `src/godot_extension/FallingSandSimulation.cpp`
-- **Fix:** Add ADD_PROPERTY for: cell_scale, render_scale, stress_threshold
-
-### Task 4.2: Add EXPORT annotations for GDScript
-- **Files:** Consider adding @export in header documentation
+### Task 4: Run GDScript Tests in Godot
+- Open `tests/TestRunner.tscn` in Godot 4.6+
+- Target: 82 passed, 0 failed
 
 ---
 
-## Priority 5: Performance Verification
+## Detailed Gap Analysis
 
-### Task 5.1: Test 1000x1000 grid performance
-- **Test:** Create 1000x1000 grid, measure FPS
-- **Target:** 60 FPS with GPU shader
+### Phase 1: Core Engine (Complete ✅)
+- ElementType enum (22 types) - All defined in `FallingSandEngine.h`
+- Element colors - Defined in `getElementColor()`
+- Double buffering - `currentBuffer`/`nextBuffer` implemented
+- All physics behaviors (SAND, WATER, FIRE, SMOKE, WOOD, OIL, ACID, GUNPOWDER)
 
-### Task 5.2: Verify timing budgets
-- **Test:** Add profiling for simulation step and texture upload
-- **Targets:** Sim < 8ms, Texture < 4ms
+### Phase 2: Black Hole Engine (Complete ✅)
+- BlackHole struct with all fields
+- Inverse-square force calculation
+- Event horizon consumption
+- Full GDScript API (add, remove, position, mass, count, info)
 
-### Task 5.3: Verify memory usage
-- **Test:** Check total memory for 500x500 and 1000x1000
-- **Targets:** 500x500 <= 3MB, 1000x1000 <= 12MB
+### Phase 3: FallingSandSimulation Node (Complete ✅)
+- All exported properties (grid_width, grid_height, cell_scale, time_scale, etc.)
+- All element manipulation methods
+- All world generation methods (clear_grid, generate_planet, generate_mining_world)
+- Texture access and dirty flag
+- All signals (element_changed, simulation_stepped, black_hole_consumed, planet_destroyed)
+- Statistics (ups, frame_count, get_element_count)
 
----
+### Phase 4: Planet Destruction (Complete ✅)
+- Three-layer planet generation (core, mantle, crust)
+- Stress accumulation system
+- Break thresholds (crust=0.3, mantle=0.6, core=1.0)
+- Debris spawning on destruction
 
-## Priority 6: Build & Documentation
+### Phase 5: Performance (Needs Verification ⚠️)
+| Test | Requirement | Status |
+|------|-------------|--------|
+| T5.1.1 | 500x500 @ 60fps with 16 black holes | ⚠️ Unverified |
+| T5.1.2 | 1000x1000 @ 60fps | ⚠️ Unverified |
+| T5.2.1 | 500x500 memory ≤3MB | ⚠️ Unverified |
+| T5.2.2 | 1000x1000 memory ≤12MB | ⚠️ Unverified |
+| T5.3.1 | Simulation step < 8ms | ⚠️ Unverified |
+| T5.3.2 | Texture upload < 4ms | ⚠️ Unverified |
 
-### Task 6.1: Update extension.gdextension for Godot 4.6
-- **Files:** `extension.gdextension`
-- **Fix:** Add "4.6" to supported_api_versions
-
-### Task 6.2: Document remaining unknowns
-- **Files:** Add notes to AGENTS.md about build process
+### Phase 6: Build & Integration (Almost Complete ⚠️)
+| Test | Requirement | Status |
+|------|-------------|--------|
+| T6.1.1 | CMake debug build | ✅ Complete |
+| T6.1.2 | CMake release build | ✅ Complete |
+| T6.2.1 | Entry point correct | ✅ Complete |
+| T6.2.2 | Product info in manifest | ❌ Missing |
+| T6.3.1 | Node registered as Node2D | ✅ Complete |
+| T6.3.2 | Properties visible in inspector | ⚠️ Needs verification |
+| T6.3.3 | Signals connectable | ⚠️ Needs verification |
+| T6.3.4 | Renders in scene | ⚠️ Needs verification |
 
 ---
 
 ## Implementation Order
 
 ```
-Phase 1: Extension Manifest (Priority 1)
-  1.1 Add product_name and product_version to extension.gdextension
-
-Phase 2: Performance Verification (Priority 2)
-  2.1 Test 500x500 @ 60fps
-  2.2 Test 1000x1000 @ 60fps (GPU path)
-  2.3 Verify timing budgets (sim < 8ms, texture < 4ms)
-  2.4 Verify memory budgets (500x500 <= 3MB, 1000x1000 <= 12MB)
+1. Fix extension.gdextension manifest (Task 1)
+2. Implement custom element colors (Task 2)
+3. Run in Godot and verify tests pass (Task 4)
+4. Run performance benchmarks (Task 3)
 ```
 
 ---
 
-## Verification Commands
+## Build & Test Commands
 
 ```bash
 # Build the extension
@@ -220,40 +147,21 @@ cmake --build build -j$(nproc)
 # Copy to Godot project
 cp build/libgodot_falling_sand.dylib addons/godot_falling_sand/
 
-# Run tests in Godot
+# Run tests
 # Open project in Godot 4.6+
 # Run tests/TestRunner.tscn
-# Target: 65 passed, 0 failed (100%)
+# Target: 82 passed, 0 failed
 ```
-
----
-
-## Test Coverage Summary
-
-| Phase | Tests | Status | Notes |
-|-------|-------|--------|-------|
-| Phase 1 | 15 | ✅ Complete | All 22 element types, physics behaviors |
-| Phase 2 | 15 | ✅ Complete | Black hole physics, API methods |
-| Phase 3 | 14 | ✅ Complete | Node properties, methods, signals |
-| Phase 4 | 5 | ✅ Complete | Planet generation, destruction |
-| Phase 5 | 5 | ❌ Pending | Performance testing not run |
-| Phase 6 | 5 | ⚠️ 4/5 | Missing product info in manifest |
-
-**Remaining Work:**
-- Add product_name and product_version to extension.gdextension
-- Run performance tests to verify 60fps targets
 
 ---
 
 ## Files Reference
 
 ### Core Engine
-- `src/FallingSandEngine.h` - Element types, Grid class
-- `src/FallingSandEngine.cpp` - Physics implementations
-
-### Black Hole Engine
-- `src/BlackHoleEngine.h` - BlackHole struct, engine class
-- `src/BlackHoleEngine.cpp` - Attraction calculations
+- `src/FallingSandEngine.h` - Element types, Grid class, stress thresholds
+- `src/FallingSandEngine.cpp` - Physics implementations, double buffering
+- `src/BlackHoleEngine.h` - BlackHole struct, constants
+- `src/BlackHoleEngine.cpp` - Attraction calculations, event horizon
 
 ### GDExtension
 - `src/godot_extension/FallingSandSimulation.h` - Main Node2D class
@@ -262,6 +170,10 @@ cp build/libgodot_falling_sand.dylib addons/godot_falling_sand/
 - `src/godot_extension/register_types.cpp` - Entry point
 
 ### Configuration
-- `extension.gdextension` - Manifest
+- `extension.gdextension` - Manifest (needs Task 1 fix)
 - `CMakeLists.txt` - Build system
 - `tests/TestRunner.gd` - Test harness
+
+### Shaders
+- `shaders/grid_render.gdshader` - GPU rendering (exists, needs testing)
+- `shaders/particle_effect.gdshader` - Visual effects
