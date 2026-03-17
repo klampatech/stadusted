@@ -23,13 +23,13 @@ The project implements a Godot 4.6 GDExtension with:
 | Phase | Tests | Complete | Notes |
 |-------|-------|----------|-------|
 | Phase 1: Core Engine | 15 | ✅ | All element types and physics behaviors implemented |
-| Phase 2: Black Hole | 17 | ✅ | Physics, API methods all complete |
-| Phase 3: Simulation Node | 14 | ✅ | Properties, methods, signals bound |
-| Phase 4: Planet Destruction | 10 | ✅ | Generation, stress, debris complete |
-| Phase 5: Performance | 5 | ⚠️ | Needs runtime verification in Godot |
-| Phase 6: Build & Integration | 4 | ⚠️ | Missing product info in manifest |
+| Phase 2: Black Hole | 21 | ✅ | Physics, API methods all complete |
+| Phase 3: Simulation Node | 27 | ✅ | Properties, methods, signals bound |
+| Phase 4: Planet Destruction | 9 | ✅ | Generation, stress, debris complete |
+| Phase 5: Performance | 6 | ⚠️ | Needs runtime verification in Godot |
+| Phase 6: Build & Integration | 9 | ⚠️ | Missing product info in manifest |
 
-**Total: 82 tests across 6 phases**
+**Total: 55 acceptance tests across 6 phases (per SPECS/ACCEPTANCE_CRITERIA.md)**
 
 ---
 
@@ -158,28 +158,23 @@ The project implements a Godot 4.6 GDExtension with:
 ### Task 1: Fix Extension Manifest (Required)
 - **Files:** `extension.gdextension`
 - **Current State:** Missing `[project]` section with product info
-- **Missing:**
-  - `compatibility_maximum = "4.6"`
-  - `[project]` section with `product_name` and `product_version`
-- **Impact:** Medium - extension works but Godot may show warnings
-- **Fix:**
+- **Current Content:**
 ```ini
 [configuration]
 
 entry_symbol = "godot_falling_sand_gdextension_init"
 compatibility_minimum = "4.2"
-compatibility_maximum = "4.6"
-
-[project]
-
-product_name = "Falling Sand Simulation"
-product_version = "1.0.0"
 
 [libraries]
 
 macos.debug = "res://addons/godot_falling_sand/libgodot_falling_sand.dylib"
 macos.release = "res://addons/godot_falling_sand/libgodot_falling_sand.dylib"
 ```
+- **Missing:**
+  - `compatibility_maximum = "4.6"` in [configuration]
+  - `[project]` section with `product_name` and `product_version`
+- **Impact:** Medium - extension works but Godot may show warnings
+- **Fix:** Add missing lines to extension.gdextension
 
 ### Task 2: Implement Custom Element Color Storage (Nice to Have)
 - **Files:** `src/godot_extension/FallingSandSimulation.h`, `.cpp`
