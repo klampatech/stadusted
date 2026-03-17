@@ -270,7 +270,7 @@ Expected: Configuration completes (may fail on missing Godot headers - that's ex
 ## Verification Results (2026-03-17)
 
 - CMake configuration: PASSES
-- Build artifacts exist: godot_falling_sand.framework in build/
+- Build artifacts exist: libgodot_falling_sand.dylib in build/
 - Signal emissions verified in code:
   - black_hole_consumed: Implemented in FallingSandSimulation.cpp:72
   - planet_destroyed: Implemented in FallingSandSimulation.cpp:83
@@ -278,6 +278,11 @@ Expected: Configuration completes (may fail on missing Godot headers - that's ex
 - ConsumedElement tracking: Implemented in FallingSandEngine.h:74-90
 - Test infrastructure: tests/TestRunner.gd (681 lines, 50+ tests)
 - Note: GDScript tests require Godot 4.6+ to run
+- GDExtension loads successfully in Godot 4.6.1
+- Fixed: cell_scale bind_method missing (now added)
+- Fixed: extension.gdextension format updated for Godot 4.6
+- Fixed: CMake builds dylib instead of framework for macOS compatibility
+- Fixed: Extension loading - single instance now loads correctly
 
 ---
 
