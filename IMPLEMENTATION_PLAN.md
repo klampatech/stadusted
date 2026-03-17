@@ -284,6 +284,28 @@ Expected: Configuration completes (may fail on missing Godot headers - that's ex
 - Fixed: CMake builds dylib instead of framework for macOS compatibility
 - Fixed: Extension loading - single instance now loads correctly
 
+## Verification Results (2026-03-17 v2)
+
+### Critical Issues Fixed
+- Fixed extension.gdextension format: Was using JSON format with "entry_point", changed to INI format with "entry_symbol" per Godot 4.6 docs
+- Fixed TestRunner.tscn: Changed node type from "Node2D" to "FallingSandSimulation" so GDExtension class is used
+- Added missing GDScript bindings (29 tests now passing, up from 3):
+  - set_grid_size(width, height)
+  - set_simulation_running/is_simulation_running
+  - set_stress_threshold/get_stress_threshold
+  - get_element, is_valid_position, get_element_position
+  - screen_to_grid, grid_to_screen
+  - spawn_row, spawn_column, spawn_rectangle
+  - get_color_for_element, set_element_color
+  - get_planet_count, get_planet_id_at, destroy_planet
+  - Properties: simulation_started, frame_updated, grid_resized, stress_critical, render_scale
+
+### Remaining Issues (Known)
+- Tests calling _physics_process directly fail (this is a Godot virtual method, not a callable)
+- Grid texture returns null (needs proper initialization in constructor)
+- Some properties not exposed correctly
+- Extension class "already registered" warning (loading twice from two .gdextension files)
+
 ---
 
 ## Post-Implementation Verification
