@@ -6,3 +6,6 @@
 /build/
 build/
 *.framework/
+
+# Agent logs
+otto.log
