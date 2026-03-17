@@ -1,6 +1,6 @@
 # Stardust Implementation Plan
 
-> **Status:** Analysis Complete - Tasks Identified
+> **Status:** Implementation Near Complete - Final Gaps Identified
 > **Last Updated:** 2026-03-17
 > **Goal:** Complete all acceptance criteria (55 tests) with 100% pass rate
 
@@ -70,23 +70,23 @@ The project implements a Godot 4.6 GDExtension with:
 | T3.1.4 | simulation_paused | ✅ Complete | Boolean default false |
 | T3.1.5 | time_scale | ✅ Complete | Float 0.1-10.0 default 1.0 |
 | T3.2.1 | spawn_element | ✅ Complete | x, y, type, radius |
-| T3.2.2 | spawn_element_at_world | ⚠️ Missing | Not bound in _bind_methods |
+| T3.2.2 | spawn_element_at_world | ✅ Complete | Bound in _bind_methods |
 | T3.2.3 | erase_element | ✅ Complete | x, y, radius |
-| T3.2.4 | erase_element_at_world | ⚠️ Missing | Not bound in _bind_methods |
+| T3.2.4 | erase_element_at_world | ✅ Complete | Bound in _bind_methods |
 | T3.2.5 | get_element_at | ✅ Complete | Returns EMPTY for OOB |
-| T3.2.6 | get_element_at_world | ⚠️ Missing | Not bound in _bind_methods |
+| T3.2.6 | get_element_at_world | ✅ Complete | Bound in _bind_methods |
 | T3.2.7 | fill_rect | ✅ Complete | x, y, w, h, type |
 | T3.2.8 | fill_circle | ✅ Complete | cx, cy, radius, type |
 | T3.3.1 | clear_grid | ✅ Complete | Sets all to EMPTY |
 | T3.3.2 | generate_planet | ✅ Complete | 3-layer planet |
-| T3.3.3 | generate_mining_world | ⚠️ Missing | Not bound in _bind_methods |
+| T3.3.3 | generate_mining_world | ✅ Complete | Bound in _bind_methods |
 | T3.4.1 | grid_texture | ✅ Complete | Returns ImageTexture |
 | T3.4.2 | is_texture_dirty | ✅ Complete | Dirty flag implemented |
 | T3.4.3 | get_grid_texture | ✅ Complete | Returns valid ImageTexture |
-| T3.5.1 | element_changed signal | ⚠️ Partial | Not emitting in simulation |
-| T3.5.2 | simulation_stepped signal | ⚠️ Partial | Not emitting in simulation |
-| T3.5.3 | black_hole_consumed signal | ⚠️ Partial | Not emitting in simulation |
-| T3.5.4 | planet_destroyed signal | ⚠️ Partial | Not emitting in simulation |
+| T3.5.1 | element_changed signal | ✅ Complete | Emitting at line 287, 317 |
+| T3.5.2 | simulation_stepped signal | ✅ Complete | Emitting at line 106 |
+| T3.5.3 | black_hole_consumed signal | ✅ Complete | Emitting at line 79, 134 |
+| T3.5.4 | planet_destroyed signal | ✅ Complete | Emitting at line 90, 145 |
 | T3.6.1 | ups | ✅ Complete | Calculated from frame_count/time |
 | T3.6.2 | frame_count | ✅ Complete | Increments each step |
 | T3.6.3 | get_element_count | ✅ Complete | Returns count by type |
@@ -122,63 +122,29 @@ The project implements a Godot 4.6 GDExtension with:
 | T6.1.3 | Release build | ✅ Complete | Optimized binary |
 | T6.2.1 | Entry point | ✅ Complete | extension.gdextension |
 | T6.2.2 | API version | ✅ Complete | Godot 4.2, 4.3 |
-| T6.2.3 | Product info | ✅ Complete | Name/version defined |
+| T6.2.3 | Product info | ❌ Missing | product_name, product_version not in manifest |
 | T6.3.1 | Node registration | ✅ Complete | Node2D subclass |
-| T6.3.2 | Property export | ⚠️ Partial | Some properties exported |
-| T6.3.3 | Signal connection | ⚠️ Partial | Signals defined |
+| T6.3.2 | Property export | ✅ Complete | 9 properties exported |
+| T6.3.3 | Signal connection | ✅ Complete | All signals connectable |
 | T6.3.4 | Scene usage | ✅ Complete | Renders texture |
 
 ---
 
-## Priority 1: Critical GDScript Bindings (Blocking Tests)
+## Priority 1: Extension Manifest (Blocking Final Spec Compliance)
 
-### Task 1.1: Bind spawn_element_at_world
-- **Files:** `src/godot_extension/FallingSandSimulation.cpp`
-- **Issue:** Method implemented but not bound
-- **Fix:** Add to _bind_methods()
-
-### Task 1.2: Bind erase_element_at_world
-- **Files:** `src/godot_extension/FallingSandSimulation.cpp`
-- **Issue:** Method implemented but not bound
-- **Fix:** Add to _bind_methods()
-
-### Task 1.3: Bind get_element_at_world
-- **Files:** `src/godot_extension/FallingSandSimulation.cpp`
-- **Issue:** Method implemented but not bound
-- **Fix:** Add to _bind_methods()
-
-### Task 1.4: Bind generate_mining_world
-- **Files:** `src/godot_extension/FallingSandSimulation.cpp`
-- **Issue:** Method implemented but not bound
-- **Fix:** Add to _bind_methods()
+### Task 1.1: Add product info to extension.gdextension
+- **Files:** `extension.gdextension`
+- **Issue:** Missing product_name and product_version
+- **Fix:** Add `[project]` section with:
+  ```ini
+  product_name = "Falling Sand Simulation"
+  product_version = "1.0.0"
+  ```
+- **Verification:** Check file contains both fields
 
 ---
 
-## Priority 2: Signal Implementation (Game Logic Required)
-
-### Task 2.1: Implement element_changed signal
-- **Files:** `src/godot_extension/FallingSandSimulation.cpp`
-- **Issue:** Signal defined but not emitted
-- **Fix:** Emit during cell changes in update loop
-
-### Task 2.2: Implement simulation_stepped signal
-- **Files:** `src/godot_extension/FallingSandSimulation.cpp`
-- **Issue:** Signal defined but not emitted
-- **Fix:** Emit at end of _physics_process
-
-### Task 2.3: Implement black_hole_consumed signal
-- **Files:** `src/godot_extension/FallingSandSimulation.cpp`
-- **Issue:** Signal defined but not emitted
-- **Fix:** Use consumedElements from Grid
-
-### Task 2.4: Implement planet_destroyed signal
-- **Files:** `src/godot_extension/FallingSandSimulation.cpp`
-- **Issue:** Signal defined but not emitted
-- **Fix:** Track planet element count, emit when reaches 0
-
----
-
-## Priority 3: Custom Color Support
+## Priority 2: Performance Verification (Phase 5)
 
 ### Task 3.1: Implement custom element color storage
 - **Files:** `src/godot_extension/FallingSandSimulation.h`, `.cpp`
@@ -232,29 +198,14 @@ The project implements a Godot 4.6 GDExtension with:
 ## Implementation Order
 
 ```
-Phase 1: GDScript Bindings (Priority 1)
-  1.1 spawn_element_at_world
-  1.2 erase_element_at_world
-  1.3 get_element_at_world
-  1.4 generate_mining_world
+Phase 1: Extension Manifest (Priority 1)
+  1.1 Add product_name and product_version to extension.gdextension
 
-Phase 2: Signal Emission (Priority 2)
-  2.1 element_changed
-  2.2 simulation_stepped
-  2.3 black_hole_consumed
-  2.4 planet_destroyed
-
-Phase 3: Custom Colors (Priority 3)
-  3.1 Color storage
-  3.2 Color lookup
-
-Phase 4: Properties (Priority 4)
-  4.1 Inspector exports
-
-Phase 5: Verification (Priority 5)
-  5.1 Performance test
-  5.2 Timing test
-  5.3 Memory test
+Phase 2: Performance Verification (Priority 2)
+  2.1 Test 500x500 @ 60fps
+  2.2 Test 1000x1000 @ 60fps (GPU path)
+  2.3 Verify timing budgets (sim < 8ms, texture < 4ms)
+  2.4 Verify memory budgets (500x500 <= 3MB, 1000x1000 <= 12MB)
 ```
 
 ---
@@ -279,17 +230,18 @@ cp build/libgodot_falling_sand.dylib addons/godot_falling_sand/
 
 ## Test Coverage Summary
 
-| Phase | Tests | Passed | Failed | Coverage |
-|-------|-------|--------|--------|----------|
-| Phase 1 | 15 | 15 | 0 | 100% |
-| Phase 2 | 15 | 14 | 1 | 93% |
-| Phase 3 | 14 | 7 | 7 | 50% |
-| Phase 4 | 5 | 5 | 0 | 100% |
-| Phase 5 | 5 | 0 | 5 | 0% |
-| Phase 6 | 5 | 4 | 1 | 80% |
-| **Total** | **59** | **45** | **14** | **76%** |
+| Phase | Tests | Status | Notes |
+|-------|-------|--------|-------|
+| Phase 1 | 15 | ✅ Complete | All 22 element types, physics behaviors |
+| Phase 2 | 15 | ✅ Complete | Black hole physics, API methods |
+| Phase 3 | 14 | ✅ Complete | Node properties, methods, signals |
+| Phase 4 | 5 | ✅ Complete | Planet generation, destruction |
+| Phase 5 | 5 | ❌ Pending | Performance testing not run |
+| Phase 6 | 5 | ⚠️ 4/5 | Missing product info in manifest |
 
-**Note:** Phase 3 and Phase 5 have the most gaps. Focus on those first.
+**Remaining Work:**
+- Add product_name and product_version to extension.gdextension
+- Run performance tests to verify 60fps targets
 
 ---
 
