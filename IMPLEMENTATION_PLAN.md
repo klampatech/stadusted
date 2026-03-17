@@ -16,33 +16,34 @@
 - Core engine: `FallingSandEngine.h/.cpp` - All 22 element types, physics behaviors, double buffering, stress system
 - Black hole physics: `BlackHoleEngine.h/.cpp` - Inverse-square gravity, event horizon consumption
 - Main Godot node: `FallingSandSimulation.h/.cpp` - GDScript bindings, properties, signals (partially)
-- GridRenderer class skeleton: `GridRenderer.h` - Basic structure exists
+- GridRenderer class: `GridRenderer.h/.cpp` - Basic structure exists (needs color table completion)
 - GDExtension entry: `register_types.cpp` - Entry point exists
 
 ### Critical Gaps
 1. ❌ **Build system missing**: No CMakeLists.txt
 2. ❌ **Extension manifest missing**: No extension.gdextension (must support Godot 4.6 per project.godot)
-3. ❌ **GridRenderer implementation missing**: Header exists but no .cpp file
+3. ✅ **GridRenderer implementation**: Already exists (but uses simplified color lookup, not full getElementColor table)
 4. ❌ **Shaders missing**: No grid_render.gdshader or particle_effect.gdshader
 5. ❌ **Signal emissions missing**: `planet_destroyed` and `black_hole_consumed` signals defined but never emitted
-6. ❌ **GDScript binding incomplete**: `cell_scale` property getter not bound
+6. ✅ **cell_scale property**: Already bound in _bind_methods
 7. ⚠️ **Grid resizing incomplete**: set_grid_width/height don't recreate grid
-8. ⚠️ **add_black_hole API incomplete**: Missing influence_radius parameter
-9. ⚠️ **Rendering integration incomplete**: No Sprite2D setup to display grid_texture
-10. ⚠️ **Test harness missing**: No GDScript tests
+8. ⚠️ **add_black_hole API incomplete**: Missing `influence_radius` parameter (spec says 150 default)
+9. ⚠️ **Rendering integration**: Grid texture used in FallingSandSimulation, but Sprite2D setup needs verification in GDScript
+10. ❌ **Test harness missing**: No GDScript tests per acceptance criteria
+11. ⚠️ **GridRenderer color table**: Uses hardcoded colors instead of getElementColor() from FallingSandEngine
 
 ### Verified Implemented Components
-- Core engine (`FallingSandEngine.h/.cpp`) - All 22 element types, double buffering, physics behaviors, stress system
-- Black hole physics (`BlackHoleEngine.h/.cpp`) - Inverse-square gravity, event horizon consumption, all constants per spec
-- Main Godot node (`FallingSandSimulation.h/.cpp`) - Most GDScript bindings, properties defined
-- GDExtension entry (`register_types.cpp`) - Entry point exists
-- GridRenderer header (`GridRenderer.h`) - Structure exists
+- Core engine (`FallingSandEngine.h/.cpp`) - All 22 element types, double buffering, physics behaviors, stress system ✅
+- Black hole physics (`BlackHoleEngine.h/.cpp`) - Inverse-square gravity, event horizon consumption, all constants per spec ✅
+- Main Godot node (`FallingSandSimulation.h/.cpp`) - Most GDScript bindings, properties defined ✅
+- GDExtension entry (`register_types.cpp`) - Entry point exists ✅
+- GridRenderer (`GridRenderer.h/.cpp`) - Structure exists ✅
 
 ---
 
-## Task 0: Pre-flight Check - Verify Code Compiles (After Tasks 1-3)
+## Task 0: Pre-flight Check - Verify Code Compiles (After Tasks 1-2)
 
-Run after completing Tasks 1-3 to verify the build system works:
+Run after completing Tasks 1-2 to verify the build system works:
 ```bash
 cmake -B build -DCMAKE_BUILD_TYPE=Debug
 cmake --build build -j$(nproc)
@@ -56,6 +57,7 @@ Expected: Build completes (may fail on linking if Godot headers not found - that
 
 **Files:**
 - Create: `CMakeLists.txt`
+- Dependencies: None
 - Test: N/A (build file only)
 
 ### Step 1: Create CMakeLists.txt
@@ -142,13 +144,17 @@ endif()
 
 ---
 
-## Task 3: Create GridRenderer.cpp Implementation
+## Task 3: Create GridRenderer.cpp Implementation ✅ ALREADY DONE
 
 **Files:**
-- Create: `src/godot_extension/GridRenderer.cpp`
-- Test: N/A (build will verify)
+- Already exists: `src/godot_extension/GridRenderer.cpp`
+- Status: IMPLEMENTED (needs color table improvement for full spec compliance)
 
-### Step 3: Create GridRenderer.cpp
+### Step 3: GridRenderer Already Exists
+
+The GridRenderer.cpp file already exists at `src/godot_extension/GridRenderer.cpp`. It provides basic texture rendering but could be improved to use the full element color table from `getElementColor()`.
+
+For now, skip this task - the basic implementation exists.
 
 ```cpp
 #include "GridRenderer.h"
@@ -268,20 +274,19 @@ void fragment() {
 
 ---
 
-## Task 6: Fix cell_scale GDScript Binding
+## Task 6: Fix cell_scale GDScript Binding ✅ ALREADY DONE
 
 **Files:**
-- Modify: `src/godot_extension/FallingSandSimulation.cpp:403-408`
+- Status: Already implemented in `src/godot_extension/FallingSandSimulation.cpp`
 
-### Step 6: Add cell_scale property binding
+### Step 6: cell_scale Already Bound
 
-In `_bind_methods()`, after the existing ADD_PROPERTY calls:
-
+The cell_scale property is already properly bound at line 405 in `_bind_methods()`:
 ```cpp
-// Cell scale property is already bound via getter/setter
-// Ensure it's properly exposed
 ADD_PROPERTY(PropertyInfo(Variant::INT, "cell_scale"), "set_cell_scale", "get_cell_scale");
 ```
+
+Skip this task - already complete.
 
 ---
 
@@ -400,19 +405,76 @@ Expected: Configuration completes without errors (may fail on missing Godot head
 
 ---
 
-## Task 10: Commit All Changes
+## Task 10: Create GDScript Test Harness
+
+**Files:**
+- Create: `res://tests/TestRunner.gd`
+- Create: `res://tests/TestRunner.tscn`
+
+### Step 10: Create test harness
+
+Per acceptance criteria, create a test runner that verifies all phases:
+
+```gdscript
+# res://tests/TestRunner.gd
+extends Node
+
+var sim: FallingSandSimulation
+var pass_count := 0
+var fail_count := 0
+
+func _ready() -> void:
+    sim = $FallingSandSimulation
+    run_all_tests()
+    print("=== RESULTS: %d passed, %d failed ===" % [pass_count, fail_count])
+
+func assert_eq(test_id: String, actual, expected) -> void:
+    if actual == expected:
+        print("[PASS] %s" % test_id)
+        pass_count += 1
+    else:
+        print("[FAIL] %s: expected %s, got %s" % [test_id, expected, actual])
+        fail_count += 1
+
+func run_all_tests() -> void:
+    # Phase 1: Core Engine tests
+    test_element_types()
+    test_element_colors()
+    test_double_buffering()
+
+    # Phase 2: Black Hole Engine tests
+    test_black_hole_struct()
+    test_inverse_square_law()
+
+    # Phase 3: FallingSandSimulation tests
+    test_properties()
+    test_element_manipulation()
+
+func test_element_types() -> void:
+    # T1.1.1: Verify all 22 element types present
+    assert_eq("T1.1.1", sim.get_element_count(21), 0)  # BLACK_HOLE exists
+
+# ... more tests per acceptance criteria
+```
+
+---
+
+## Task 11: Commit All Changes
 
 **Files:**
 - Commit: All new and modified files
 
-### Step 10: Commit changes
+### Step 11: Commit changes
 
 ```bash
-git add CMakeLists.txt extension.gdextension src/godot_extension/GridRenderer.cpp shaders/
+git add CMakeLists.txt extension.gdextension shaders/ tests/
 git commit -m "feat: Add build system and complete GDExtension scaffolding
 
 - Add CMakeLists.txt for building the GDExtension
-- Add extension.gdextension manifest for Godot 4.2/4.3
+- Add extension.gdextension manifest for Godot 4.6
+- Add grid and particle shaders for rendering
+- Add test harness for acceptance criteria verification
+- Implement signal emissions for black_hole_consumed and planet_destroyed"
 - Implement GridRenderer.cpp for texture rendering
 - Add grid_render.gdshader for GPU-based grid visualization
 - Add particle_effect.gdshader for visual effects
@@ -425,17 +487,21 @@ git commit -m "feat: Add build system and complete GDExtension scaffolding
 
 ## Execution Order
 
-1. Task 0: Pre-flight check (optional, after Tasks 1-3)
-2. Task 1: Create CMakeLists.txt
+**Completed (already implemented):**
+- Task 3: GridRenderer.cpp ✅
+- Task 6: cell_scale binding ✅
+
+**Remaining tasks:**
+1. Task 0: Pre-flight check (optional, after Tasks 1-2)
+2. Task 1: Create CMakeLists.txt ⬅️ START HERE
 3. Task 2: Create extension.gdextension
-4. Task 3: Create GridRenderer.cpp
-5. Task 4: Create grid_render.gdshader
-6. Task 5: Create particle_effect.gdshader
-7. Task 6: Fix cell_scale binding
-8. Task 7: Emit black_hole_consumed signal
-9. Task 8: Emit planet_destroyed signal
-10. Task 9: Verify build
-11. Task 10: Commit
+4. Task 4: Create grid_render.gdshader
+5. Task 5: Create particle_effect.gdshader
+6. Task 7: Emit black_hole_consumed signal
+7. Task 8: Emit planet_destroyed signal
+8. Task 9: Verify build
+9. Task 10: Create test harness
+10. Task 11: Commit
 
 ---
 
@@ -477,8 +543,20 @@ Once Tasks 1-8 are complete, these acceptance criteria can be verified:
 
 ## In Progress
 
-<!-- Tasks currently being worked on -->
+<!-- Tasks currently being worked on - none yet -->
 
 ## Completed
 
-<!-- Completed tasks (can be periodically cleaned out) -->
+### Verified (Gap Analysis - 2025-03-17)
+- **FallingSandEngine.h/.cpp**: All 22 element types implemented ✅
+- **BlackHoleEngine.h/.cpp**: Inverse-square gravity, event horizon constants ✅
+- **FallingSandSimulation.h/.cpp**: GDScript bindings for most methods ✅
+- **register_types.cpp**: Entry point exists ✅
+- **GridRenderer.h/.cpp**: Basic implementation exists ✅
+
+### Pending Implementation
+- CMakeLists.txt (Task 1)
+- extension.gdextension (Task 2)
+- Shaders (Tasks 4-5)
+- Signal emissions (Tasks 7-8)
+- Test harness (Task 10)
