@@ -5,4 +5,4 @@
 [node name="TestRunner" type="Node"]
 script = ExtResource("1")
 
-[node name="FallingSandSimulation" type="Node2D" parent="."]
+[node name="FallingSandSimulation" type="FallingSandSimulation" parent="."]

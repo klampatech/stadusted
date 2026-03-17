@@ -7,9 +7,3 @@ compatibility_minimum = "4.2"
 
 macos.debug = "res://addons/godot_falling_sand/libgodot_falling_sand.dylib"
 macos.release = "res://addons/godot_falling_sand/libgodot_falling_sand.dylib"
-
-[dependencies]
-
-[lifetimes]
-
-[extensions]
