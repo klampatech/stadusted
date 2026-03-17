@@ -6,13 +6,9 @@
 
 ---
 
-## Architecture Overview
+## Executive Summary
 
-The project implements a Godot 4.6 GDExtension with:
-- **Core Engine:** Double-buffered cellular automaton (500x500 default)
-- **Black Hole Physics:** Inverse-square gravity with event horizon consumption
-- **Planet Destruction:** Stress-based breaking with debris spawning
-- **GDScript API:** Full binding for all simulation operations
+The Stardust project implements a **Godot 4.6 GDExtension** for a falling sand cellular automaton simulation with black hole physics. The core C++ engine, black hole physics, planet destruction mechanics, and GDScript bindings are **fully implemented**. Remaining work focuses on manifest configuration and runtime verification.
 
 **Tech Stack:** Godot 4.6, C++17, GDExtension API, CMake
 
@@ -157,24 +153,36 @@ The project implements a Godot 4.6 GDExtension with:
 
 ### Task 1: Fix Extension Manifest (Required)
 - **Files:** `extension.gdextension`
-- **Current State:** Missing `[project]` section with product info
+- **Current State:** Missing `compatibility_maximum` and `[project]` section
 - **Current Content:**
 ```ini
 [configuration]
-
 entry_symbol = "godot_falling_sand_gdextension_init"
 compatibility_minimum = "4.2"
 
 [libraries]
-
 macos.debug = "res://addons/godot_falling_sand/libgodot_falling_sand.dylib"
 macos.release = "res://addons/godot_falling_sand/libgodot_falling_sand.dylib"
 ```
-- **Missing:**
+- **Missing per GDEXTENSION_SPEC.md:**
   - `compatibility_maximum = "4.6"` in [configuration]
-  - `[project]` section with `product_name` and `product_version`
+  - `[project]` section with `product_name = "Falling Sand Simulation"` and `product_version = "1.0.0"`
 - **Impact:** Medium - extension works but Godot may show warnings
-- **Fix:** Add missing lines to extension.gdextension
+- **Fix:** Add missing lines to extension.gdextension:
+```ini
+[configuration]
+entry_symbol = "godot_falling_sand_gdextension_init"
+compatibility_minimum = "4.2"
+compatibility_maximum = "4.6"
+
+[project]
+product_name = "Falling Sand Simulation"
+product_version = "1.0.0"
+
+[libraries]
+macos.debug = "res://addons/godot_falling_sand/libgodot_falling_sand.dylib"
+macos.release = "res://addons/godot_falling_sand/libgodot_falling_sand.dylib"
+```
 
 ### Task 2: Implement Custom Element Color Storage (Nice to Have)
 - **Files:** `src/godot_extension/FallingSandSimulation.h`, `.cpp`
@@ -232,15 +240,34 @@ macos.release = "res://addons/godot_falling_sand/libgodot_falling_sand.dylib"
 ## Build & Test Commands
 
 ```bash
-# Build the extension
+# Build the extension (Debug)
+cmake -B build -DCMAKE_BUILD_TYPE=Debug
+cmake --build build -j$(nproc)
+
+# Build the extension (Release)
 cmake -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build -j$(nproc)
 
 # Copy to Godot project
 cp build/libgodot_falling_sand.dylib addons/godot_falling_sand/
 
-# Run tests
-# Open project in Godot 4.6+
-# Run tests/TestRunner.tscn
-# Target: 82 passed, 0 failed
+# Run tests in Godot
+# 1. Open project in Godot 4.6+
+# 2. Run tests/TestRunner.tscn
+# 3. Target: 82 passed, 0 failed
+
+# Performance verification in Godot
+# 1. Create scene with FallingSandSimulation node
+# 2. Set grid to 500x500, add 16 black holes
+# 3. Monitor FPS (target >= 60)
+# 4. Use Performance monitor for memory/timing
 ```
+
+---
+
+## Spec Reference
+
+- **GDEXTENSION_SPEC.md** - Technical specification for C++ GDExtension
+- **STARDUST_SPEC.md** - Game design and architecture
+- **STARDUST_ACCEPTANCE_CRITERIA.md** - Test-driven acceptance criteria (97 tests)
+- **ACCEPTANCE_CRITERIA.md** - Additional acceptance criteria
