@@ -300,11 +300,30 @@ Expected: Configuration completes (may fail on missing Godot headers - that's ex
   - get_planet_count, get_planet_id_at, destroy_planet
   - Properties: simulation_started, frame_updated, grid_resized, stress_critical, render_scale
 
+## Verification Results (2026-03-17 v3) - Current
+
+### Major Fixes Applied
+- Removed duplicate extension.gdextension at root (was causing class registration conflict)
+- Added step() method for tests to advance simulation (replaces _physics_process which is not callable from GDScript)
+- Fixed grid texture initialization in constructor (was null because _ready hadn't run)
+- Added missing signal definitions: simulation_started, simulation_paused, stress_critical, frame_updated, grid_resized
+- Fixed black hole properties to return integers instead of floats
+- Fixed spawn_row, spawn_column API to be count-based instead of range-based
+- Added updateElementCounts() calls after grid modifications (element counts were stale)
+- Fixed destroy_planet to only clear planet elements, not entire grid
+- Fixed remove_black_hole to mark inactive instead of erasing (keeps indices stable)
+- Updated tests to use step() instead of _physics_process
+- Added clear_grid() calls to tests for state isolation
+
+### Test Results
+- Before fixes: 29 passed, 24 failed
+- After fixes: 54 passed, 11 failed
+
 ### Remaining Issues (Known)
-- Tests calling _physics_process directly fail (this is a Godot virtual method, not a callable)
-- Grid texture returns null (needs proper initialization in constructor)
-- Some properties not exposed correctly
-- Extension class "already registered" warning (loading twice from two .gdextension files)
+- Some tests have state isolation issues (inherited from previous tests)
+- Black hole physics not fully exercised by tests (some edge cases)
+- Signal connection issues in some tests
+- set_element_color not fully implemented (stub only)
 
 ---
 

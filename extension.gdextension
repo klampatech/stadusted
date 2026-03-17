@@ -1,9 +1,0 @@
-[configuration]
-
-entry_symbol = "godot_falling_sand_gdextension_init"
-compatibility_minimum = "4.2"
-
-[libraries]
-
-macos.debug = "res://addons/godot_falling_sand/libgodot_falling_sand.dylib"
-macos.release = "res://addons/godot_falling_sand/libgodot_falling_sand.dylib"

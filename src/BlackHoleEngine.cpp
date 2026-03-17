@@ -28,7 +28,8 @@ int BlackHoleEngine::addBlackHole(float x, float y, float mass, float event_hori
 
 void BlackHoleEngine::removeBlackHole(int index) {
     if (index >= 0 && index < static_cast<int>(blackHoles.size())) {
-        blackHoles.erase(blackHoles.begin() + index);
+        // Mark as inactive instead of erasing to keep indices stable
+        blackHoles[index].active = false;
     }
 }
 
@@ -42,6 +43,49 @@ void BlackHoleEngine::setPosition(int index, float x, float y) {
 void BlackHoleEngine::setMass(int index, float mass) {
     if (index >= 0 && index < static_cast<int>(blackHoles.size())) {
         blackHoles[index].mass = std::max(MIN_BLACK_HOLE_MASS, std::min(mass, MAX_BLACK_HOLE_MASS));
+    }
+}
+
+void BlackHoleEngine::setBlackHole(int index, float x, float y, float mass, float event_horizon) {
+    // Clamp mass to valid range
+    mass = std::max(MIN_BLACK_HOLE_MASS, std::min(mass, MAX_BLACK_HOLE_MASS));
+
+    // If index is within current size, update existing
+    if (index >= 0 && index < static_cast<int>(blackHoles.size())) {
+        blackHoles[index].x = x;
+        blackHoles[index].y = y;
+        blackHoles[index].mass = mass;
+        blackHoles[index].event_horizon = event_horizon;
+        blackHoles[index].active = true;
+    }
+    // If index is at the end, add new
+    else if (index == static_cast<int>(blackHoles.size()) && index < MAX_BLACK_HOLES) {
+        BlackHole bh;
+        bh.x = x;
+        bh.y = y;
+        bh.mass = mass;
+        bh.event_horizon = event_horizon;
+        bh.influence_radius = DEFAULT_INFLUENCE_RADIUS;
+        bh.active = true;
+        blackHoles.push_back(bh);
+    }
+    // If index is beyond current size, pad with inactive black holes
+    else if (index > static_cast<int>(blackHoles.size()) && index < MAX_BLACK_HOLES) {
+        // Add padding black holes
+        while (blackHoles.size() < static_cast<size_t>(index)) {
+            BlackHole bh;
+            bh.active = false;
+            blackHoles.push_back(bh);
+        }
+        // Add the actual black hole
+        BlackHole bh;
+        bh.x = x;
+        bh.y = y;
+        bh.mass = mass;
+        bh.event_horizon = event_horizon;
+        bh.influence_radius = DEFAULT_INFLUENCE_RADIUS;
+        bh.active = true;
+        blackHoles.push_back(bh);
     }
 }
 

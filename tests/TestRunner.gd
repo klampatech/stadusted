@@ -128,6 +128,7 @@ func assert_range(test_id: String, actual, lo, hi) -> void:
 func test_T1_3_2() -> void:
 	# Verify get_element_count returns correct counts after spawn
 	sim.set_grid_size(10, 10)
+	sim.clear_grid()
 	sim.spawn_element(5, 5, 1)  # SAND
 	sim.spawn_element(6, 5, 1)  # SAND
 	sim.spawn_element(5, 6, 2)  # WATER
@@ -140,6 +141,7 @@ func test_T1_3_2() -> void:
 func test_T1_3_3() -> void:
 	# Verify get_element_count returns 0 for empty grid
 	sim.set_grid_size(10, 10)
+	sim.clear_grid()
 	var empty_count = sim.get_element_count(1)
 	assert_eq("T1.3.3", empty_count, 0)
 
@@ -154,7 +156,7 @@ func test_T2_4_1() -> void:
 	sim.set_grid_size(500, 500)
 	sim.spawn_element(300, 250, 1)  # SAND
 	# Advance simulation - element should move toward black hole
-	sim._physics_process(0.016)
+	sim.step(0.016)
 	var pos = sim.get_element_position(300, 250)
 	# Element should have moved toward black hole (x should decrease from 300)
 	assert_true("T2.4.1", pos.x < 300)
@@ -180,7 +182,7 @@ func test_T2_4_3() -> void:
 	sim.set_black_hole(1, 150, 100, 10000, 10)
 	sim.set_grid_size(500, 500)
 	sim.spawn_element(100, 100, 1)  # Between both black holes
-	sim._physics_process(0.016)
+	sim.step(0.016)
 	var pos = sim.get_element_position(100, 100)
 	# Should be pulled toward center point between black holes
 	assert_range("T2.4.3", pos.x, 95, 105)
@@ -191,7 +193,7 @@ func test_T2_4_4() -> void:
 	sim.set_black_hole(0, 100, 100, 10000, 10)
 	sim.set_grid_size(500, 500)
 	sim.spawn_element(105, 100, 1)  # Just inside event horizon (distance 5 < 10)
-	sim._physics_process(0.016)
+	sim.step(0.016)
 	var count = sim.get_element_count(1)
 	assert_eq("T2.4.4", count, 0)  # Should be consumed
 
@@ -201,7 +203,7 @@ func test_T2_4_5() -> void:
 	sim.set_black_hole(0, 100, 100, 10000, 10)
 	sim.set_grid_size(500, 500)
 	sim.spawn_element(120, 100, 1)  # Outside event horizon (distance 20 > 10)
-	sim._physics_process(0.016)
+	sim.step(0.016)
 	var count = sim.get_element_count(1)
 	assert_eq("T2.4.5", count, 1)  # Should survive
 
@@ -333,6 +335,7 @@ func test_T4_1_8() -> void:
 
 func test_T4_1_9() -> void:
 	# Test is_valid_position
+	sim.set_grid_size(500, 500)  # Reset to default size
 	assert_true("T4.1.9", sim.is_valid_position(50, 50))
 	assert_true("T4.1.9b", sim.is_valid_position(0, 0))
 	assert_true("T4.1.9c", sim.is_valid_position(499, 499))
@@ -351,6 +354,7 @@ func test_T4_1_10() -> void:
 func test_T4_1_11() -> void:
 	# Test spawn_column
 	sim.set_grid_size(100, 100)
+	sim.clear_grid()
 	sim.spawn_column(50, 1, 10)  # 10 sand at column 50
 	var c = sim.get_element_count(1)
 	assert_eq("T4.1.11", c, 10)
@@ -359,6 +363,7 @@ func test_T4_1_11() -> void:
 func test_T4_1_12() -> void:
 	# Test spawn_rectangle
 	sim.set_grid_size(100, 100)
+	sim.clear_grid()
 	sim.spawn_rectangle(10, 10, 5, 3, 1)  # 5x3 sand
 	var c = sim.get_element_count(1)
 	assert_eq("T4.1.12", c, 15)
@@ -389,7 +394,7 @@ func test_T5_1_2() -> void:
 		fired = true
 	)
 	sim.spawn_element(105, 100, 1)  # Inside event horizon
-	sim._physics_process(0.016)
+	sim.step(0.016)
 	assert_true("T5.1.2", fired)
 
 
@@ -406,7 +411,7 @@ func test_T5_1_3() -> void:
 	sim.spawn_element(250, 252, 20)  # PLANET_CRUST
 	# Trigger destruction via black hole
 	sim.set_black_hole(0, 250, 250, 100000, 50)
-	sim._physics_process(0.1)
+	sim.step(0.1)
 	# Wait for all elements to be consumed
 	await get_tree().create_timer(1.0).timeout
 	assert_true("T5.1.3", fired)
@@ -494,7 +499,7 @@ func test_T6_1_3() -> void:
 	sim.set_grid_size(100, 100)
 	sim.spawn_element(50, 50, 1)
 	var tex1 = sim.get_grid_texture()
-	sim._physics_process(0.016)
+	sim.step(0.016)
 	var tex2 = sim.get_grid_texture()
 	# Textures should be different after update
 	assert_true("T6.1.3", tex1 != tex2)
@@ -562,6 +567,7 @@ func test_T7_1_3() -> void:
 func test_T7_1_5() -> void:
 	# Test destroy_planet_by_id
 	sim.set_grid_size(500, 500)
+	sim.clear_grid()
 	sim.generate_planet(250, 250, 30)
 	sim.destroy_planet(0)
 	var planet_elements = sim.get_element_count(18) + sim.get_element_count(19) + sim.get_element_count(20)
@@ -582,7 +588,7 @@ func test_T7_1_7() -> void:
 	sim.set_grid_size(500, 500)
 	sim.generate_planet(250, 250, 25)
 	sim.set_black_hole(0, 250, 250, 100000, 100)
-	sim._physics_process(0.1)
+	sim.step(0.1)
 	await get_tree().create_timer(1.0).timeout
 	var planet_elements = sim.get_element_count(18) + sim.get_element_count(19) + sim.get_element_count(20)
 	assert_eq("T7.1.7", planet_elements, 0)
@@ -598,6 +604,7 @@ func test_T7_1_8() -> void:
 func test_T7_1_9() -> void:
 	# Test get_planet_count
 	sim.set_grid_size(500, 500)
+	sim.clear_grid()
 	var count_before = sim.get_planet_count()
 	sim.generate_planet(150, 250, 20)
 	sim.generate_planet(350, 250, 20)
@@ -622,7 +629,7 @@ func test_T8_1_1() -> void:
 	sim.set_grid_size(100, 100)
 	sim.set_simulation_running(true)
 	var start = Time.get_ticks_usec()
-	sim._physics_process(0.016)  # One frame at ~60 FPS
+	sim.step(0.016)  # One frame at ~60 FPS
 	var elapsed = Time.get_ticks_usec() - start
 	sim.set_simulation_running(false)
 	# Should complete in under 10ms for small grid
@@ -647,7 +654,7 @@ func test_T8_1_3() -> void:
 	sim.set_grid_size(500, 500)
 	var start = Time.get_ticks_usec()
 	for i in range(100):
-		sim._physics_process(0.016)
+		sim.step(0.016)
 	var elapsed = Time.get_ticks_usec() - start
 	# 100 frames should complete in reasonable time
 	assert_true("T8.1.3", elapsed < 1000000)  # < 1 second
@@ -659,7 +666,7 @@ func test_T8_1_4() -> void:
 	var start_mem = OS.get_static_memory_usage()
 	for i in range(1000):
 		sim.spawn_element(i % 200, i / 200, 1)
-		sim._physics_process(0.016)
+		sim.step(0.016)
 		sim.clear_grid()
 	var end_mem = OS.get_static_memory_usage()
 	var leak = end_mem - start_mem

@@ -24,6 +24,10 @@ FallingSandSimulation::FallingSandSimulation()
     // Initialize the grid
     grid = new Grid(gridWidth, gridHeight);
     blackHoleEngine = new BlackHoleEngine();
+
+    // Initialize the grid image and texture in constructor (not _ready) so tests can access them
+    gridImage = Image::create(gridWidth, gridHeight, false, Image::FORMAT_RGBA8);
+    gridTexture = ImageTexture::create_from_image(gridImage);
 }
 
 FallingSandSimulation::~FallingSandSimulation() {
@@ -102,6 +106,61 @@ void FallingSandSimulation::_physics_process(double delta) {
     emit_signal("simulation_stepped", delta);
 }
 
+// Public step method callable from GDScript for testing
+void FallingSandSimulation::step(double delta) {
+    if (simulationPaused) return;
+
+    float scaledDelta = delta * timeScale;
+    updateAccumulator += scaledDelta;
+
+    // Target 60 updates per second
+    float targetUpdateTime = 1.0f / 60.0f;
+
+    while (updateAccumulator >= targetUpdateTime) {
+        updateAccumulator -= targetUpdateTime;
+
+        // Update simulation with black holes
+        if (blackHolesEnabled) {
+            grid->updateWithBlackHoles(blackHoleEngine);
+        } else {
+            grid->update();
+        }
+
+        grid->swapBuffers();
+
+        // Emit black_hole_consumed signals for elements consumed this frame
+        auto consumed = grid->getConsumedElements();
+        for (const auto& elem : consumed) {
+            emit_signal("black_hole_consumed", elem.x, elem.y, static_cast<int>(elem.type));
+        }
+        grid->clearConsumedElements();
+
+        // Check for planet destruction
+        int currentPlanetCount =
+            grid->getElementCount(ElementType::PLANET_CORE) +
+            grid->getElementCount(ElementType::PLANET_MANTLE) +
+            grid->getElementCount(ElementType::PLANET_CRUST);
+
+        if (lastPlanetElementCount > 0 && currentPlanetCount == 0) {
+            emit_signal("planet_destroyed", 0);
+        }
+        lastPlanetElementCount = currentPlanetCount;
+
+        frameCount++;
+        textureDirty = true;
+
+        // Emit frame_updated signal
+        emit_signal("frame_updated");
+    }
+
+    // Calculate UPS
+    double currentTime = Time::get_singleton()->get_ticks_msec() / 1000.0;
+    if (currentTime - lastUpdateTime >= 1.0) {
+        updatesPerSecond = frameCount / static_cast<float>(currentTime - lastUpdateTime);
+        lastUpdateTime = currentTime;
+    }
+}
+
 void FallingSandSimulation::_exit_tree() {
     // Cleanup handled in destructor
 }
@@ -122,6 +181,16 @@ void FallingSandSimulation::set_grid_size(int width, int height) {
     }
 
     if (resized) {
+        // Recreate grid and texture with new size
+        if (grid) {
+            delete grid;
+        }
+        grid = new Grid(gridWidth, gridHeight);
+        gridImage = Image::create(gridWidth, gridHeight, false, Image::FORMAT_RGBA8);
+        gridTexture = ImageTexture::create_from_image(gridImage);
+        textureDirty = true;
+
+        emit_signal("grid_resized", gridWidth, gridHeight);
         emit_signal("property_changed", "grid_resized");
     }
 }
@@ -167,9 +236,15 @@ bool FallingSandSimulation::is_simulation_paused() const {
 }
 
 void FallingSandSimulation::set_simulation_running(bool running) {
+    bool wasRunning = simulationRunning;
     simulationRunning = running;
     if (running) {
         simulationPaused = false;
+        if (!wasRunning) {
+            emit_signal("simulation_started");
+        }
+    } else if (wasRunning && !running) {
+        emit_signal("simulation_paused");
     }
 }
 
@@ -218,6 +293,7 @@ void FallingSandSimulation::spawn_element(int x, int y, int element_type, int ra
     }
 
     grid->spawnElement(x, y, newType, radius);
+    grid->updateElementCounts();
     textureDirty = true;
 }
 
@@ -281,28 +357,33 @@ bool FallingSandSimulation::is_valid_position(int x, int y) const {
 void FallingSandSimulation::fill_rect(int x, int y, int w, int h, int element_type) {
     if (element_type < 0 || element_type > 21) return;
     grid->fillRect(x, y, w, h, static_cast<ElementType>(element_type));
+    grid->updateElementCounts();
     textureDirty = true;
 }
 
 void FallingSandSimulation::fill_circle(int cx, int cy, int radius, int element_type) {
     if (element_type < 0 || element_type > 21) return;
     grid->fillCircle(cx, cy, radius, static_cast<ElementType>(element_type));
+    grid->updateElementCounts();
     textureDirty = true;
 }
 
 // World generation
 void FallingSandSimulation::clear_grid() {
     grid->clear();
+    grid->updateElementCounts();
     textureDirty = true;
 }
 
 void FallingSandSimulation::generate_planet(int center_x, int center_y, int radius) {
     grid->generatePlanet(center_x, center_y, radius);
+    grid->updateElementCounts();
     textureDirty = true;
 }
 
 void FallingSandSimulation::generate_mining_world(int seed) {
     grid->generateWorld(seed);
+    grid->updateElementCounts();
     textureDirty = true;
 }
 
@@ -354,12 +435,8 @@ void FallingSandSimulation::mark_texture_clean() {
 
 // Black hole management
 void FallingSandSimulation::set_black_hole(int index, float x, float y, float mass, float event_horizon) {
-    // Remove existing black hole at this index if it exists
-    if (index < blackHoleEngine->getCount()) {
-        blackHoleEngine->removeBlackHole(index);
-    }
-    // Add new black hole at the specified index position
-    blackHoleEngine->addBlackHole(x, y, mass, event_horizon);
+    // Set black hole at the specified index (creates if needed)
+    blackHoleEngine->setBlackHole(index, x, y, mass, event_horizon);
 }
 
 int FallingSandSimulation::add_black_hole(float x, float y, float mass, float event_horizon) {
@@ -385,10 +462,10 @@ int FallingSandSimulation::get_black_hole_count() const {
 Dictionary FallingSandSimulation::get_black_hole_info(int index) const {
     Dictionary info;
     BlackHole bh = blackHoleEngine->getBlackHole(index);
-    info["x"] = bh.x;
-    info["y"] = bh.y;
-    info["mass"] = bh.mass;
-    info["event_horizon"] = bh.event_horizon;
+    info["x"] = static_cast<int>(bh.x);
+    info["y"] = static_cast<int>(bh.y);
+    info["mass"] = static_cast<int>(bh.mass);
+    info["event_horizon"] = static_cast<int>(bh.event_horizon);
     info["active"] = bh.active;
     return info;
 }
@@ -452,8 +529,18 @@ int FallingSandSimulation::get_planet_id_at(int x, int y) const {
 }
 
 void FallingSandSimulation::destroy_planet(int planet_id) {
-    // For now, clear all planet elements
-    grid->fillRect(0, 0, gridWidth, gridHeight, ElementType::EMPTY);
+    // Clear all planet elements (PLANET_CORE, PLANET_MANTLE, PLANET_CRUST)
+    for (int y = 0; y < gridHeight; y++) {
+        for (int x = 0; x < gridWidth; x++) {
+            ElementType type = grid->getCell(x, y);
+            if (type == ElementType::PLANET_CORE ||
+                type == ElementType::PLANET_MANTLE ||
+                type == ElementType::PLANET_CRUST) {
+                grid->setCell(x, y, ElementType::EMPTY);
+            }
+        }
+    }
+    grid->updateElementCounts();
     textureDirty = true;
 }
 
@@ -473,21 +560,23 @@ Vector2 FallingSandSimulation::grid_to_screen(Vector2 grid_pos) const {
 }
 
 // Element spawning utilities
-void FallingSandSimulation::spawn_row(int y, int element_type, int start_x, int end_x) {
-    if (end_x < 0) end_x = gridWidth;
+void FallingSandSimulation::spawn_row(int y, int element_type, int count) {
     if (element_type < 0 || element_type > 21) return;
-    for (int x = start_x; x < end_x; x++) {
+    if (count < 0) count = 0;
+    for (int x = 0; x < count && x < gridWidth; x++) {
         grid->setCell(x, y, static_cast<ElementType>(element_type));
     }
+    grid->updateElementCounts();
     textureDirty = true;
 }
 
-void FallingSandSimulation::spawn_column(int x, int element_type, int start_y, int end_y) {
-    if (end_y < 0) end_y = gridHeight;
+void FallingSandSimulation::spawn_column(int x, int element_type, int count) {
     if (element_type < 0 || element_type > 21) return;
-    for (int y = start_y; y < end_y; y++) {
+    if (count < 0) count = 0;
+    for (int y = 0; y < count && y < gridHeight; y++) {
         grid->setCell(x, y, static_cast<ElementType>(element_type));
     }
+    grid->updateElementCounts();
     textureDirty = true;
 }
 
@@ -608,8 +697,8 @@ void FallingSandSimulation::_bind_methods() {
     ClassDB::bind_method(D_METHOD("grid_to_screen", "grid_pos"), &FallingSandSimulation::grid_to_screen);
 
     // Element spawning utilities
-    ClassDB::bind_method(D_METHOD("spawn_row", "y", "element_type", "start_x", "end_x"), &FallingSandSimulation::spawn_row, DEFVAL(0), DEFVAL(-1));
-    ClassDB::bind_method(D_METHOD("spawn_column", "x", "element_type", "start_y", "end_y"), &FallingSandSimulation::spawn_column, DEFVAL(0), DEFVAL(-1));
+    ClassDB::bind_method(D_METHOD("spawn_row", "y", "element_type", "count"), &FallingSandSimulation::spawn_row);
+    ClassDB::bind_method(D_METHOD("spawn_column", "x", "element_type", "count"), &FallingSandSimulation::spawn_column);
     ClassDB::bind_method(D_METHOD("spawn_rectangle", "x", "y", "width", "height", "element_type"), &FallingSandSimulation::spawn_rectangle);
 
     // Properties
@@ -619,6 +708,9 @@ void FallingSandSimulation::_bind_methods() {
     ClassDB::bind_method(D_METHOD("get_stress_critical"), &FallingSandSimulation::get_stress_critical);
     ClassDB::bind_method(D_METHOD("get_render_scale"), &FallingSandSimulation::get_render_scale);
     ClassDB::bind_method(D_METHOD("set_render_scale", "scale"), &FallingSandSimulation::set_render_scale);
+
+    // Step method for testing
+    ClassDB::bind_method(D_METHOD("step", "delta"), &FallingSandSimulation::step);
 
     ADD_PROPERTY(PropertyInfo(Variant::INT, "grid_width"), "set_grid_width", "get_grid_width");
     ADD_PROPERTY(PropertyInfo(Variant::INT, "grid_height"), "set_grid_height", "get_grid_height");
@@ -636,9 +728,17 @@ void FallingSandSimulation::_bind_methods() {
                          PropertyInfo(Variant::INT, "old_type"),
                          PropertyInfo(Variant::INT, "new_type")));
     ADD_SIGNAL(MethodInfo("simulation_stepped", PropertyInfo(Variant::FLOAT, "delta")));
+    ADD_SIGNAL(MethodInfo("simulation_started"));
+    ADD_SIGNAL(MethodInfo("simulation_paused"));
     ADD_SIGNAL(MethodInfo("black_hole_consumed", PropertyInfo(Variant::INT, "x"),
                          PropertyInfo(Variant::INT, "y"),
                          PropertyInfo(Variant::INT, "element_type")));
     ADD_SIGNAL(MethodInfo("planet_destroyed", PropertyInfo(Variant::INT, "planet_id")));
     ADD_SIGNAL(MethodInfo("property_changed", PropertyInfo(Variant::STRING, "property_name")));
+    ADD_SIGNAL(MethodInfo("stress_critical", PropertyInfo(Variant::INT, "x"),
+                         PropertyInfo(Variant::INT, "y"),
+                         PropertyInfo(Variant::FLOAT, "stress_level")));
+    ADD_SIGNAL(MethodInfo("frame_updated"));
+    ADD_SIGNAL(MethodInfo("grid_resized", PropertyInfo(Variant::INT, "new_width"),
+                         PropertyInfo(Variant::INT, "new_height")));
 }

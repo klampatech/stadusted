@@ -132,9 +132,12 @@ public:
     Vector2 grid_to_screen(Vector2 grid_pos) const;
 
     // Element spawning utilities
-    void spawn_row(int y, int element_type, int start_x, int end_x);
-    void spawn_column(int x, int element_type, int start_y, int end_y);
+    void spawn_row(int y, int element_type, int count);
+    void spawn_column(int x, int element_type, int count);
     void spawn_rectangle(int x, int y, int width, int height, int element_type);
+
+    // Step method for testing
+    void step(double delta);
 
     // Properties for GDScript binding
     bool get_simulation_started() const;

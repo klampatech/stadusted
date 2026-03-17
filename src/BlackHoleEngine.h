@@ -68,6 +68,11 @@ public:
     void setMass(int index, float mass);
 
     /**
+     * Set black hole properties at a specific index (creates if needed)
+     */
+    void setBlackHole(int index, float x, float y, float mass, float event_horizon);
+
+    /**
      * Get number of active black holes
      */
     int getCount() const;
