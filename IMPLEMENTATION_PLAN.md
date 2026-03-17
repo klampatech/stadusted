@@ -13,18 +13,18 @@
 
 | Phase | Spec Tests | Implemented | Gap |
 |-------|------------|-------------|-----|
-| Phase 1: Core Engine | 11 | 11 | ✅ Complete |
+| Phase 1: Core Engine | 11 | 10 | ⚠️ 1 gap: explicit element properties |
 | Phase 2: Black Hole | 15 | 15 | ✅ Complete |
 | Phase 3: Simulation Node | 14 | 13 | ⚠️ 1 gap: radius validation |
 | Phase 4: Planet Destruction | 5 | 5 | ✅ Complete |
 | Phase 5: Performance | 5 | 0 | ❌ Not benchmarked |
-| Phase 6: Build & Integration | 5 | 3 | ⚠️ Need verification |
+| Phase 6: Build & Integration | 5 | 4 | ⚠️ 1 gap: runtime verification |
 
 ---
 
 ## Implementation Status (Detailed)
 
-### ✅ Phase 1: Core Engine - COMPLETE
+### ✅ Phase 1: Core Engine - MOSTLY COMPLETE
 
 | Component | Status | Files |
 |-----------|--------|-------|
@@ -34,6 +34,9 @@
 | Row-major layout | ✅ | `src/FallingSandEngine.cpp:83,90` |
 | Bounds checking | ✅ | `src/FallingSandEngine.cpp:79-91` |
 | Physics behaviors (SAND, WATER, FIRE, SMOKE, WOOD, OIL, ACID, GUNPOWDER) | ✅ | `src/FallingSandEngine.cpp:350-956` |
+| Element properties (density, flammability, conductivity) | ⚠️ | Not explicit constants - implicit in physics |
+
+**Gap (P1.1):** Element properties (density, flammability, conductivity) are not defined as explicit constants in the code. The spec requires these to be defined per element type. Currently the behaviors are implicitly handled in the update functions.
 
 ### ✅ Phase 2: Black Hole Engine - COMPLETE
 
@@ -56,7 +59,7 @@
 | Signals (element_changed, simulation_stepped, black_hole_consumed, planet_destroyed) | ✅ | `src/godot_extension/FallingSandSimulation.cpp:726-743` |
 | Statistics (ups, frame_count, get_element_count) | ✅ | `src/godot_extension/FallingSandSimulation.cpp:491-502` |
 
-**Gap:** `spawn_element`, `erase_element`, `fill_circle` don't validate radius parameter bounds. Negative or extremely large radii could cause undefined behavior.
+**Gap (P3.1):** `spawn_element`, `erase_element`, `fill_circle` don't validate radius parameter bounds. Negative or extremely large radii could cause undefined behavior.
 
 ### ✅ Phase 4: Planet Destruction - COMPLETE
 
@@ -79,10 +82,12 @@ No benchmarking has been performed. Need to verify:
 
 | Component | Status | Files |
 |-----------|--------|-------|
-| CMake build system | ✅ | Configured |
-| Extension manifest (extension.gdextension) | ✅ | Present |
-| Godot node registration | ✅ | `src/godot_extension/register_types.cpp` |
-| GDScript bindings | ⚠️ | Need runtime verification |
+| CMake build system | ✅ | `CMakeLists.txt` configured |
+| Extension manifest | ✅ | `extension.gdextension` present |
+| Node registration | ✅ | `src/godot_extension/register_types.cpp` |
+| GridRenderer class | ✅ | `src/godot_extension/GridRenderer.h/cpp` skeleton exists |
+| Shaders | ✅ | `shaders/grid_render.gdshader` exists but not integrated |
+| GDScript bindings | ⚠️ | Need runtime verification in Godot |
 
 ---
 
@@ -90,7 +95,25 @@ No benchmarking has been performed. Need to verify:
 
 ### P0: Critical Fixes
 
-#### Task P0.1: Validate brush radius in spawn/erase methods
+#### Task P0.1: Add explicit element properties
+**Files:** `src/FallingSandEngine.h`, `src/FallingSandEngine.cpp`
+
+**Issue:** Spec requires explicit element properties (density, flammability, conductivity) to be defined per element type. Currently these are implicit in physics functions.
+
+**Fix:** Add property struct/constants:
+
+```cpp
+// In FallingSandEngine.h, after ElementType enum:
+struct ElementProperties {
+    float density;        // For gravity-based sorting
+    float flammability;  // 0-1, chance to catch fire
+    float conductivity;  // For heat/fire spread
+};
+
+ElementProperties getElementProperties(ElementType type);
+```
+
+#### Task P0.2: Validate brush radius in spawn/erase methods
 **Files:** `src/godot_extension/FallingSandSimulation.cpp`
 
 **Issue:** Methods like `spawn_element`, `erase_element`, `fill_circle` accept radius without bounds validation.
@@ -201,7 +224,8 @@ Review STARDUST_SPEC.md and ensure all 55 acceptance criteria are addressed.
 
 ```
 P0: Critical Fixes
-└── P0.1: Radius validation
+├── P0.1: Element properties
+└── P0.2: Radius validation
     │
     └── P1: Integration Testing
         ├── P1.1: Verify GDScript bindings
@@ -223,12 +247,12 @@ P0: Critical Fixes
 
 ## Acceptance Criteria Status
 
-### Phase 1: Core Engine (11 tests) ✅
+### Phase 1: Core Engine (11 tests) ⚠️
 | ID | Test | Status |
 |----|------|--------|
 | T1.1.1 | ElementType enum (22 types) | ✅ |
 | T1.1.2 | Element colors (distinct RGBA) | ✅ |
-| T1.1.3 | Element properties (density, flammability, conductivity) | ✅ |
+| T1.1.3 | Element properties (density, flammability, conductivity) | ⚠️ Not explicit |
 | T1.2.1 | Double buffering | ✅ |
 | T1.2.2 | Memory layout (≤500KB for 500x500) | ✅ |
 | T1.2.3 | Row-major order | ✅ |
@@ -285,7 +309,7 @@ P0: Critical Fixes
 
 ## Next Steps
 
-1. **Immediately:** Fix radius validation (P0.1)
+1. **Immediately:** Fix P0.1 (element properties) and P0.2 (radius validation)
 2. **Then:** Verify integration in Godot Editor (P1.x)
 3. **Then:** Run performance benchmarks (P2.x)
 4. **If needed:** Implement GPU shader path (P3.1)
@@ -296,6 +320,7 @@ P0: Critical Fixes
 ## Notes
 
 - The existing implementation covers all major spec requirements
-- Main gaps are in input validation and testing/verification
+- Main gaps are in input validation (radius) and explicit element properties
 - GPU shader path is optional - ImageTexture path should handle 500x500 at 60 FPS
-- GridRenderer class in godot_extension/ is a skeleton - main rendering uses ImageTexture in FallingSandSimulation
+- GridRenderer class is a skeleton - main rendering uses ImageTexture in FallingSandSimulation
+- extension.gdextension points to macOS .dylib - needs paths for other platforms
