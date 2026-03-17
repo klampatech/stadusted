@@ -1,0 +1,14 @@
+{
+    "entry_point": "godot_falling_sand_gdextension_init",
+    "toolbox": false,
+    "rdp": false,
+    "script_language": "gdscript",
+    "dependencies": [],
+    "product_name": "Falling Sand Simulation",
+    "product_version": "1.0.0",
+    "supported_api_versions": [
+        "4.6",
+        "4.3",
+        "4.2"
+    ]
+}
