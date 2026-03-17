@@ -370,6 +370,8 @@ void FallingSandSimulation::_bind_methods() {
     ClassDB::bind_method(D_METHOD("is_simulation_paused"), &FallingSandSimulation::is_simulation_paused);
     ClassDB::bind_method(D_METHOD("set_time_scale", "scale"), &FallingSandSimulation::set_time_scale);
     ClassDB::bind_method(D_METHOD("get_time_scale"), &FallingSandSimulation::get_time_scale);
+    ClassDB::bind_method(D_METHOD("set_cell_scale", "scale"), &FallingSandSimulation::set_cell_scale);
+    ClassDB::bind_method(D_METHOD("get_cell_scale"), &FallingSandSimulation::get_cell_scale);
 
     // Element operations
     ClassDB::bind_method(D_METHOD("spawn_element", "x", "y", "element_type", "radius"),

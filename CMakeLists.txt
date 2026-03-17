@@ -39,8 +39,8 @@ target_link_libraries(godot_falling_sand PRIVATE
 # Platform-specific settings
 if(APPLE)
     set_target_properties(godot_falling_sand PROPERTIES
-        FRAMEWORK TRUE
-        MACOSX_FRAMEWORK_IDENTIFIER "com.stardust.falling-sand"
+        LIBRARY_OUTPUT_NAME "godot_falling_sand"
+        OUTPUT_NAME "godot_falling_sand"
         LINKER_FLAGS "-undefined dynamic_lookup"
     )
 endif()

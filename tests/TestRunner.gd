@@ -5,7 +5,7 @@
 
 extends Node
 
-var sim: FallingSandSimulation
+var sim
 var pass_count := 0
 var fail_count := 0
 
