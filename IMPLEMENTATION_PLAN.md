@@ -30,6 +30,7 @@
 | 2 | **extension.gdextension missing** | Critical | Godot won't load the extension | ✅ Complete |
 | 3 | **Shaders directory missing** | Medium | No GPU rendering path | ✅ Complete |
 | 4 | **Signal emissions incomplete** | Medium | black_hole_consumed and planet_destroyed not emitted | ✅ Complete |
+| 5 | **Tests directory missing** | High | Cannot verify acceptance criteria | ✅ Complete |
 
 ---
 
@@ -264,12 +265,14 @@ Expected: Configuration completes (may fail on missing Godot headers - that's ex
 3. Task 3: Create shaders ✅ COMPLETE
 4. Task 4: Implement signal emissions ✅ COMPLETE
 5. Task 5: Verify build ✅ COMPLETE
+6. Task 6: Create test infrastructure ✅ COMPLETE
 
 ## Verification Results (2026-03-17)
 
 - CMake configuration: PASSES (fails on missing Godot headers as expected)
-- All 4 critical gaps resolved
+- All 5 critical gaps resolved
 - Build ready for Godot headers injection via GODOT_INCLUDE_DIRS
+- Test infrastructure created (tests/TestRunner.tscn, tests/TestRunner.gd)
 
 ---
 
