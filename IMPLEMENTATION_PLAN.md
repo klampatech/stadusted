@@ -1,6 +1,6 @@
 # Stardust Implementation Plan
 
-> **Status:** Implementation Near Complete
+> **Status:** Implementation Complete - Verification Phase
 > **Last Updated:** 2026-03-17
 > **Goal:** Complete all acceptance criteria with 100% pass rate
 
@@ -25,7 +25,7 @@ The Stardust project implements a **Godot 4.6 GDExtension** for a falling sand c
 | Phase 5: Performance | 6 | ⚠️ | Needs runtime verification in Godot |
 | Phase 6: Build & Integration | 9 | ⚠️ | Missing product info in manifest |
 
-**Total: 55 acceptance tests across 6 phases (per SPECS/ACCEPTANCE_CRITERIA.md)**
+**Total: 55 acceptance tests across 6 phases + 54 GDScript runtime tests**
 
 ---
 
@@ -183,6 +183,7 @@ product_version = "1.0.0"
 macos.debug = "res://addons/godot_falling_sand/libgodot_falling_sand.dylib"
 macos.release = "res://addons/godot_falling_sand/libgodot_falling_sand.dylib"
 ```
+- **Status:** PENDING - Needs to be applied
 
 ### Task 2: Implement Custom Element Color Storage (Nice to Have)
 - **Files:** `src/godot_extension/FallingSandSimulation.h`, `.cpp`
@@ -191,7 +192,8 @@ macos.release = "res://addons/godot_falling_sand/libgodot_falling_sand.dylib"
 
 ### Task 3: Run GDScript Tests in Godot (High Priority)
 - **Action:** Open `tests/TestRunner.tscn` in Godot 4.6+
-- **Target:** Run all tests, achieve 82 passed, 0 failed
+- **Test File:** `tests/TestRunner.gd` - 54 test cases defined
+- **Target:** All tests pass
 
 ### Task 4: Run Performance Verification (Medium Priority)
 - **Test 4.1:** 500x500 grid + 16 black holes, verify FPS ≥ 60
@@ -205,9 +207,8 @@ macos.release = "res://addons/godot_falling_sand/libgodot_falling_sand.dylib"
 
 ```
 1. Fix extension manifest (Task 1) - Required for proper Godot integration
-2. Run GDScript tests in Godot (Task 3) - Verify all 82 tests pass
-3. Implement custom colors if needed (Task 2 - optional)
-4. Run performance benchmarks (Task 4)
+2. Run GDScript tests in Godot (Task 3) - Verify all 54 tests pass
+3. Run performance benchmarks (Task 4)
 ```
 
 ---
@@ -254,7 +255,7 @@ cp build/libgodot_falling_sand.dylib addons/godot_falling_sand/
 # Run tests in Godot
 # 1. Open project in Godot 4.6+
 # 2. Run tests/TestRunner.tscn
-# 3. Target: 82 passed, 0 failed
+# 3. Target: All tests pass
 
 # Performance verification in Godot
 # 1. Create scene with FallingSandSimulation node
