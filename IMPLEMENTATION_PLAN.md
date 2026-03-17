@@ -26,7 +26,7 @@ The project implements a Godot 4.6 GDExtension with:
 | Phase 2: Black Hole | 17 | ✅ | Physics, API methods all complete |
 | Phase 3: Simulation Node | 14 | ✅ | Properties, methods, signals bound |
 | Phase 4: Planet Destruction | 10 | ✅ | Generation, stress, debris complete |
-| Phase 5: Performance | 4 | ⚠️ | Needs runtime verification |
+| Phase 5: Performance | 5 | ⚠️ | Needs runtime verification in Godot |
 | Phase 6: Build & Integration | 4 | ⚠️ | Missing product info in manifest |
 
 **Total: 82 tests across 6 phases**
@@ -155,14 +155,14 @@ The project implements a Godot 4.6 GDExtension with:
 
 ## Remaining Tasks (Prioritized)
 
-### Task 1: Fix Extension Manifest (Blocking) - LOW PRIORITY
+### Task 1: Fix Extension Manifest (Required)
 - **Files:** `extension.gdextension`
-- **Current State:** Has basic config, missing product info
+- **Current State:** Missing `[project]` section with product info
 - **Missing:**
-  - `compatibility_maximum = "4.6"` (recommended)
+  - `compatibility_maximum = "4.6"`
   - `[project]` section with `product_name` and `product_version`
-- **Impact:** Low - extension works but Godot may show warning
-- **Fix (optional):**
+- **Impact:** Medium - extension works but Godot may show warnings
+- **Fix:**
 ```ini
 [configuration]
 
@@ -201,8 +201,8 @@ macos.release = "res://addons/godot_falling_sand/libgodot_falling_sand.dylib"
 ## Implementation Order
 
 ```
-1. Run GDScript tests in Godot (Task 3)
-2. Fix extension manifest if needed (Task 1 - optional)
+1. Fix extension manifest (Task 1) - Required for proper Godot integration
+2. Run GDScript tests in Godot (Task 3) - Verify all 82 tests pass
 3. Implement custom colors if needed (Task 2 - optional)
 4. Run performance benchmarks (Task 4)
 ```
