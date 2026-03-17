@@ -93,6 +93,10 @@ private:
     std::vector<float> stressMap;
     std::vector<float> nextStressMap;
 
+    // Gravity displacement from black holes for non-planet elements
+    std::vector<float> gravityDisplacementX;
+    std::vector<float> gravityDisplacementY;
+
     // Statistics
     std::vector<int> elementCounts;
 

@@ -66,6 +66,8 @@ Grid::Grid(int w, int h) : width(w), height(h) {
     nextBuffer.resize(width * height, ElementType::EMPTY);
     stressMap.resize(width * height, 0.0f);
     nextStressMap.resize(width * height, 0.0f);
+    gravityDisplacementX.resize(width * height, 0.0f);
+    gravityDisplacementY.resize(width * height, 0.0f);
     elementCounts.resize(22, 0); // 22 element types
 }
 
@@ -230,6 +232,31 @@ void Grid::updateWithBlackHoles(BlackHoleEngine* blackHoleEngine) {
     static bool bottomToTop = true;
     static bool leftToRight = true;
 
+    // Calculate gravity displacement from black holes for all cells
+    if (blackHoleEngine && blackHoleEngine->getCount() > 0) {
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                ElementType cellType = getCell(x, y);
+                // Only apply gravity to movable non-planet elements
+                if (cellType != ElementType::EMPTY && !isPlanetElement(x, y)) {
+                    float dx, dy;
+                    float force = blackHoleEngine->calculateAttraction(
+                        static_cast<float>(x), static_cast<float>(y), dx, dy);
+                    // Store displacement (capped to prevent extreme movement)
+                    gravityDisplacementX[y * width + x] = std::max(-2.0f, std::min(2.0f, dx * force * 0.5f));
+                    gravityDisplacementY[y * width + x] = std::max(-2.0f, std::min(2.0f, dy * force * 0.5f));
+                } else {
+                    gravityDisplacementX[y * width + x] = 0.0f;
+                    gravityDisplacementY[y * width + x] = 0.0f;
+                }
+            }
+        }
+    } else {
+        // No black holes - clear displacement
+        std::fill(gravityDisplacementX.begin(), gravityDisplacementX.end(), 0.0f);
+        std::fill(gravityDisplacementY.begin(), gravityDisplacementY.end(), 0.0f);
+    }
+
     int yStart = bottomToTop ? height - 1 : 0;
     int yEnd = bottomToTop ? -1 : height;
     int yStep = bottomToTop ? -1 : 1;
@@ -321,6 +348,10 @@ void Grid::updateWithBlackHoles(BlackHoleEngine* blackHoleEngine) {
 }
 
 void Grid::updateSand(int x, int y) {
+    // Get gravity displacement from black holes
+    float gravX = gravityDisplacementX[y * width + x];
+    float gravY = gravityDisplacementY[y * width + x];
+
     // Try to move down
     if (isEmpty(x, y + 1)) {
         getNextCell(x, y + 1) = ElementType::SAND;
@@ -328,7 +359,14 @@ void Grid::updateSand(int x, int y) {
     }
 
     // Try to move down-left or down-right (45-degree pile angle)
+    // Consider black hole gravity bias for horizontal movement
+    bool preferLeft = gravX < -0.3f;
+    bool preferRight = gravX > 0.3f;
     bool tryLeftFirst = (rand() % 2) == 0;
+
+    // If gravity prefers a direction, try that first
+    if (preferLeft) tryLeftFirst = true;
+    else if (preferRight) tryLeftFirst = false;
 
     if (tryLeftFirst) {
         if (isEmpty(x - 1, y + 1)) {
@@ -348,6 +386,16 @@ void Grid::updateSand(int x, int y) {
             getNextCell(x - 1, y + 1) = ElementType::SAND;
             return;
         }
+    }
+
+    // Try pure horizontal movement if strong gravity pull
+    if (preferLeft && isEmpty(x - 1, y)) {
+        getNextCell(x - 1, y) = ElementType::SAND;
+        return;
+    }
+    if (preferRight && isEmpty(x + 1, y)) {
+        getNextCell(x + 1, y) = ElementType::SAND;
+        return;
     }
 
     // Can't move - stay in place
