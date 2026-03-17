@@ -26,6 +26,17 @@
 4. ❌ **Shaders missing**: No grid_render.gdshader or particle_effect.gdshader
 5. ❌ **Signal emissions missing**: `planet_destroyed` and `black_hole_consumed` signals defined but never emitted
 6. ❌ **GDScript binding incomplete**: `cell_scale` property getter not bound
+7. ⚠️ **Grid resizing incomplete**: set_grid_width/height don't recreate grid
+8. ⚠️ **add_black_hole API incomplete**: Missing influence_radius parameter
+9. ⚠️ **Rendering integration incomplete**: No Sprite2D setup to display grid_texture
+10. ⚠️ **Test harness missing**: No GDScript tests
+
+### Verified Implemented Components
+- Core engine (`FallingSandEngine.h/.cpp`) - All 22 element types, double buffering, physics behaviors, stress system
+- Black hole physics (`BlackHoleEngine.h/.cpp`) - Inverse-square gravity, event horizon consumption, all constants per spec
+- Main Godot node (`FallingSandSimulation.h/.cpp`) - Most GDScript bindings, properties defined
+- GDExtension entry (`register_types.cpp`) - Entry point exists
+- GridRenderer header (`GridRenderer.h`) - Structure exists
 
 ---
 
