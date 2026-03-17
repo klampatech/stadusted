@@ -21,7 +21,7 @@
 
 ### Critical Gaps
 1. ❌ **Build system missing**: No CMakeLists.txt
-2. ❌ **Extension manifest missing**: No extension.gdextension
+2. ❌ **Extension manifest missing**: No extension.gdextension (must support Godot 4.6 per project.godot)
 3. ❌ **GridRenderer implementation missing**: Header exists but no .cpp file
 4. ❌ **Shaders missing**: No grid_render.gdshader or particle_effect.gdshader
 5. ❌ **Signal emissions missing**: `planet_destroyed` and `black_hole_consumed` signals defined but never emitted
@@ -37,6 +37,18 @@
 - Main Godot node (`FallingSandSimulation.h/.cpp`) - Most GDScript bindings, properties defined
 - GDExtension entry (`register_types.cpp`) - Entry point exists
 - GridRenderer header (`GridRenderer.h`) - Structure exists
+
+---
+
+## Task 0: Pre-flight Check - Verify Code Compiles (After Tasks 1-3)
+
+Run after completing Tasks 1-3 to verify the build system works:
+```bash
+cmake -B build -DCMAKE_BUILD_TYPE=Debug
+cmake --build build -j$(nproc)
+```
+
+Expected: Build completes (may fail on linking if Godot headers not found - that's expected)
 
 ---
 
@@ -121,6 +133,7 @@ endif()
     "product_name": "Falling Sand Simulation",
     "product_version": "1.0.0",
     "supported_api_versions": [
+        "4.6",
         "4.3",
         "4.2"
     ]
@@ -412,16 +425,17 @@ git commit -m "feat: Add build system and complete GDExtension scaffolding
 
 ## Execution Order
 
-1. Task 1: Create CMakeLists.txt
-2. Task 2: Create extension.gdextension
-3. Task 3: Create GridRenderer.cpp
-4. Task 4: Create grid_render.gdshader
-5. Task 5: Create particle_effect.gdshader
-6. Task 6: Fix cell_scale binding
-7. Task 7: Emit black_hole_consumed signal
-8. Task 8: Emit planet_destroyed signal
-9. Task 9: Verify build
-10. Task 10: Commit
+1. Task 0: Pre-flight check (optional, after Tasks 1-3)
+2. Task 1: Create CMakeLists.txt
+3. Task 2: Create extension.gdextension
+4. Task 3: Create GridRenderer.cpp
+5. Task 4: Create grid_render.gdshader
+6. Task 5: Create particle_effect.gdshader
+7. Task 6: Fix cell_scale binding
+8. Task 7: Emit black_hole_consumed signal
+9. Task 8: Emit planet_destroyed signal
+10. Task 9: Verify build
+11. Task 10: Commit
 
 ---
 
@@ -430,6 +444,34 @@ git commit -m "feat: Add build system and complete GDExtension scaffolding
 - The build system requires Godot 4.x headers to compile. User must set `GODOT_INCLUDE_DIRS` environment variable
 - Signals are emitted after simulation step so game logic can respond to consumption events
 - GridRenderer provides both ImageTexture (CPU path) and could support GPU shader path for larger grids
+
+## Post-Implementation Verification
+
+Once Tasks 1-8 are complete, these acceptance criteria can be verified:
+
+**Phase 1 (Core Engine):**
+- T1.1.1: ElementType enum - All 22 types present
+- T1.1.2: Element colors - Each type has distinct RGBA
+- T1.2.1: Double buffering - Grid uses two buffers
+- T1.2.2: Memory layout - 500x500 ≤ 500KB
+
+**Phase 2 (Black Hole):**
+- T2.1.1: BlackHole struct fields
+- T2.1.2: Default constants match spec
+- T2.2.1: Inverse-square law implemented
+- T2.3.1: Event horizon consumption works
+
+**Phase 3 (Simulation Node):**
+- T3.1.1-5: Properties work (grid_width, grid_height, etc.)
+- T3.2.1-8: Element manipulation methods
+- T3.3.1-3: World generation methods
+- T3.4.1-3: Texture & rendering
+- T3.5.1-4: Signals emit correctly
+
+**Phase 6 (Build & Integration):**
+- T6.1.1-3: CMake builds produce shared library
+- T6.2.1-3: Extension manifest correct
+- T6.3.1-4: Godot integration works
 
 ---
 
