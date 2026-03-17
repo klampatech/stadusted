@@ -1,9 +1,10 @@
 # Stardust Implementation Plan
 
 ## Project Overview
+
 - **Project:** Stardust - Black Hole Falling Sand Game
 - **Type:** Godot 4.x GDExtension (C++)
-- **Status:** Core engine complete, integration testing in progress
+- **Status:** Core implementation complete, integration testing in progress
 - **Target:** 500x500 grid at 60 FPS with 16 black holes
 
 ---
@@ -14,10 +15,10 @@
 |-------|------------|-------------|-----|
 | Phase 1: Core Engine | 11 | 11 | ✅ Complete |
 | Phase 2: Black Hole | 15 | 15 | ✅ Complete |
-| Phase 3: Simulation Node | 14 | 13 | ⚠️ 1 gap: spawn_element radius validation |
+| Phase 3: Simulation Node | 14 | 13 | ⚠️ 1 gap: radius validation |
 | Phase 4: Planet Destruction | 5 | 5 | ✅ Complete |
 | Phase 5: Performance | 5 | 0 | ❌ Not benchmarked |
-| Phase 6: Build & Integration | 5 | 4 | ⚠️ Need Godot verification |
+| Phase 6: Build & Integration | 5 | 3 | ⚠️ Need verification |
 
 ---
 
@@ -27,60 +28,61 @@
 
 | Component | Status | Files |
 |-----------|--------|-------|
-| ElementType enum (22 types) | ✅ | `FallingSandEngine.h:21-44` |
-| Element colors | ✅ | `FallingSandEngine.cpp:9-38` |
-| Double buffering | ✅ | `FallingSandEngine.h:84-85`, `FallingSandEngine.cpp:94-100` |
-| Row-major layout | ✅ | `FallingSandEngine.cpp:83,90` |
-| Bounds checking | ✅ | `FallingSandEngine.cpp:79-91` |
-| Physics behaviors | ✅ | `FallingSandEngine.cpp:350-956` |
+| ElementType enum (22 types) | ✅ | `src/FallingSandEngine.h:21-44` |
+| Element colors | ✅ | `src/FallingSandEngine.cpp:9-38` |
+| Double buffering | ✅ | `src/FallingSandEngine.h:84-85`, `src/FallingSandEngine.cpp:94-100` |
+| Row-major layout | ✅ | `src/FallingSandEngine.cpp:83,90` |
+| Bounds checking | ✅ | `src/FallingSandEngine.cpp:79-91` |
+| Physics behaviors (SAND, WATER, FIRE, SMOKE, WOOD, OIL, ACID, GUNPOWDER) | ✅ | `src/FallingSandEngine.cpp:350-956` |
 
 ### ✅ Phase 2: Black Hole Engine - COMPLETE
 
 | Component | Status | Files |
 |-----------|--------|-------|
-| BlackHole struct | ✅ | `BlackHoleEngine.h:13-23` |
-| Constants | ✅ | `BlackHoleEngine.h:34-42` |
-| Attraction force (inverse-square) | ✅ | `BlackHoleEngine.cpp:115-169` |
-| Event horizon | ✅ | `BlackHoleEngine.cpp:171-187` |
-| GDScript API | ✅ | `FallingSandSimulation.cpp:437-488` |
+| BlackHole struct (x, y, mass, event_horizon, influence_radius, active) | ✅ | `src/BlackHoleEngine.h:13-23` |
+| Constants (DEFAULT_MASS=1000, DEFAULT_EVENT_HORIZON=8, etc.) | ✅ | `src/BlackHoleEngine.h:34-42` |
+| Attraction force (inverse-square law) | ✅ | `src/BlackHoleEngine.cpp:115-169` |
+| Event horizon consumption | ✅ | `src/BlackHoleEngine.cpp:171-187` |
+| GDScript API (add/remove/set black holes) | ✅ | `src/godot_extension/FallingSandSimulation.cpp:437-488` |
 
 ### ⚠️ Phase 3: Simulation Node - MOSTLY COMPLETE
 
 | Component | Status | Files |
 |-----------|--------|-------|
-| Properties (grid_width, grid_height, etc.) | ✅ | `FallingSandSimulation.cpp:169-269` |
-| Element manipulation | ⚠️ | `FallingSandSimulation.cpp:272-369` - Need radius validation |
-| World generation | ✅ | `FallingSandSimulation.cpp:372-393` |
-| Texture rendering | ✅ | `FallingSandSimulation.cpp:396-434` |
-| Signals | ✅ | `FallingSandSimulation.cpp:726-743` |
-| Statistics | ✅ | `FallingSandSimulation.cpp:491-502` |
+| Properties (grid_width, grid_height, cell_scale, simulation_paused, time_scale) | ✅ | `src/godot_extension/FallingSandSimulation.cpp:169-269` |
+| Element manipulation methods | ⚠️ | `src/godot_extension/FallingSandSimulation.cpp:272-369` - Need radius validation |
+| World generation (clear_grid, generate_planet, generate_mining_world) | ✅ | `src/godot_extension/FallingSandSimulation.cpp:372-393` |
+| Texture rendering (grid_texture, is_texture_dirty, mark_texture_clean) | ✅ | `src/godot_extension/FallingSandSimulation.cpp:396-434` |
+| Signals (element_changed, simulation_stepped, black_hole_consumed, planet_destroyed) | ✅ | `src/godot_extension/FallingSandSimulation.cpp:726-743` |
+| Statistics (ups, frame_count, get_element_count) | ✅ | `src/godot_extension/FallingSandSimulation.cpp:491-502` |
 
-**Gap:** `spawn_element` and related methods don't validate radius parameter bounds - could cause buffer overflow.
+**Gap:** `spawn_element`, `erase_element`, `fill_circle` don't validate radius parameter bounds. Negative or extremely large radii could cause undefined behavior.
 
 ### ✅ Phase 4: Planet Destruction - COMPLETE
 
 | Component | Status | Files |
 |-----------|--------|-------|
-| Layered generation | ✅ | `FallingSandEngine.cpp:1071-1105` |
-| Stress accumulation | ✅ | `FallingSandEngine.cpp:286-303,1166-1184` |
-| Break thresholds | ✅ | `FallingSandEngine.cpp:1186-1197` |
-| Debris spawning | ✅ | `FallingSandEngine.cpp:1199-1212` |
+| Layered planet generation (core, mantle, crust) | ✅ | `src/FallingSandEngine.cpp:1071-1105` |
+| Stress accumulation from gravity | ✅ | `src/FallingSandEngine.cpp:286-303,1166-1184` |
+| Break thresholds (CRUST=0.3, MANTLE=0.6, CORE=1.0) | ✅ | `src/FallingSandEngine.cpp:1186-1197` |
+| Debris spawning on destruction | ✅ | `src/FallingSandEngine.cpp:1199-1212` |
 
 ### ❌ Phase 5: Performance - NOT TESTED
 
 No benchmarking has been performed. Need to verify:
 - 500x500 grid at 60+ FPS with ≤16 black holes
-- 1000x1000 grid at 60+ FPS (requires GPU shader)
-- Memory budget compliance
-- Update timing targets
+- 1000x1000 grid at 60+ FPS (requires GPU shader path)
+- Memory budget compliance (≤3MB for 500x500)
+- Update timing targets (<8ms simulation, <4ms texture)
 
-### ⚠️ Phase 6: Build & Integration - NEEDS VERIFICATION
+### ⚠️ Phase 6: Build & Integration - PARTIAL
 
 | Component | Status | Files |
 |-----------|--------|-------|
-| CMake build | ✅ | Configured in project |
-| Extension manifest | ✅ | `extension.gdextension` |
-| Godot integration | ⚠️ | Need runtime verification |
+| CMake build system | ✅ | Configured |
+| Extension manifest (extension.gdextension) | ✅ | Present |
+| Godot node registration | ✅ | `src/godot_extension/register_types.cpp` |
+| GDScript bindings | ⚠️ | Need runtime verification |
 
 ---
 
@@ -89,17 +91,21 @@ No benchmarking has been performed. Need to verify:
 ### P0: Critical Fixes
 
 #### Task P0.1: Validate brush radius in spawn/erase methods
-**Files:** `src/godot_extension/FallingSandSimulation.cpp`, `src/FallingSandEngine.cpp`
+**Files:** `src/godot_extension/FallingSandSimulation.cpp`
 
-Current issue: `spawn_element(int x, int y, int element_type, int radius = 1)` accepts any radius value without bounds checking.
+**Issue:** Methods like `spawn_element`, `erase_element`, `fill_circle` accept radius without bounds validation.
+
+**Fix:** Add radius validation in all affected methods:
 
 ```cpp
-// Add validation in FallingSandSimulation::spawn_element:
-if (radius < 0) radius = 0;
-if (radius > 50) radius = 50;  // Max reasonable brush size
-
-// Same for erase_element, fill_circle, etc.
+// Add at start of each method:
+radius = std::max(0, std::min(radius, 50));  // Clamp to reasonable max
 ```
+
+**Affected methods:**
+- `spawn_element` (line 272)
+- `erase_element` (line 306)
+- `fill_circle` (line 364)
 
 ---
 
@@ -121,10 +127,11 @@ if (radius > 50) radius = 50;  // Max reasonable brush size
 
 #### Task P1.3: Verify black hole API
 **Steps:**
-1. Call `add_black_hole()` - verify returns valid index
-2. Call `get_black_hole_info()` - verify returns correct Dictionary
+1. Call `add_black_hole()` - verify returns valid index (0-15)
+2. Call `get_black_hole_info()` - verify returns correct Dictionary with x, y, mass, event_horizon, active
 3. Call `remove_black_hole()` - verify removal
 4. Test with multiple black holes (up to 16)
+5. Test boundary conditions (max mass 10000, min mass 100)
 
 ---
 
@@ -134,8 +141,9 @@ if (radius > 50) radius = 50;  // Max reasonable brush size
 **Procedure:**
 1. Create 500x500 grid
 2. Spawn 16 black holes
-3. Run simulation for 60 seconds
-4. Measure average FPS via Godot Performance monitor
+3. Fill grid with ~50% elements
+4. Run simulation for 60 seconds
+5. Measure average FPS via Godot Performance monitor
 
 **Pass criteria:** Average FPS ≥ 60
 
@@ -158,19 +166,22 @@ if (radius > 50) radius = 50;  // Max reasonable brush size
 1. Create 500x500 grid
 2. Measure total memory usage
 
-**Pass criteria:** ≤ 3MB
+**Pass criteria:** ≤ 3MB total
 
 ---
 
 ### P3: GPU Shader Path (Optional)
 
-#### Task P3.1: Integrate GPU shader for large grids
+#### Task P3.1: Implement GPU shader rendering for large grids
 **Files:** `shaders/grid_render.gdshader`, `src/godot_extension/FallingSandSimulation.cpp`
 
-The shader exists (`shaders/grid_render.gdshader`) but needs:
-1. PackedByteArray data passing from C++ to shader
-2. Color palette texture setup
-3. Conditional rendering path for 1000x1000+ grids
+The spec defines a GPU shader path for 1000x1000+ grids. Currently only ImageTexture path is implemented.
+
+**Required work:**
+1. Create PackedByteArray from grid data in C++
+2. Pass to shader via uniform
+3. Implement color palette lookup in shader
+4. Add conditional rendering path based on grid size
 
 **This task is optional** - only needed if 500x500 performance is insufficient or to support larger grids.
 
@@ -178,11 +189,11 @@ The shader exists (`shaders/grid_render.gdshader`) but needs:
 
 ### P4: Documentation & Cleanup
 
-#### Task P4.1: Update CHANGELOG.md
-Record all implemented features.
-
-#### Task P4.2: Add README.md if missing
+#### Task P4.1: Create/update README.md
 Document how to build and use the extension.
+
+#### Task P4.2: Verify all spec elements implemented
+Review STARDUST_SPEC.md and ensure all 55 acceptance criteria are addressed.
 
 ---
 
@@ -215,30 +226,34 @@ P0: Critical Fixes
 ### Phase 1: Core Engine (11 tests) ✅
 | ID | Test | Status |
 |----|------|--------|
-| T1.1.1 | ElementType enum | ✅ |
-| T1.1.2 | Element colors | ✅ |
-| T1.1.3 | Element properties | ✅ |
+| T1.1.1 | ElementType enum (22 types) | ✅ |
+| T1.1.2 | Element colors (distinct RGBA) | ✅ |
+| T1.1.3 | Element properties (density, flammability, conductivity) | ✅ |
 | T1.2.1 | Double buffering | ✅ |
-| T1.2.2 | Memory layout | ✅ |
+| T1.2.2 | Memory layout (≤500KB for 500x500) | ✅ |
 | T1.2.3 | Row-major order | ✅ |
 | T1.2.4 | Bounds checking | ✅ |
 | T1.3.1 | SAND physics | ✅ |
 | T1.3.2 | WATER physics | ✅ |
 | T1.3.3 | FIRE physics | ✅ |
-| T1.3.4-8 | Other elements | ✅ |
+| T1.3.4-8 | SMOKE, WOOD, OIL, ACID, GUNPOWDER | ✅ |
 
 ### Phase 2: Black Hole Engine (15 tests) ✅
 | ID | Test | Status |
 |----|------|--------|
-| T2.1.1-4 | Structure & constants | ✅ |
-| T2.2.1-6 | Attraction force | ✅ |
-| T2.3.1-3 | Event horizon | ✅ |
-| T2.4.1-8 | GDScript API | ✅ |
+| T2.1.1 | BlackHole struct fields | ✅ |
+| T2.1.2 | Default constants | ✅ |
+| T2.1.3 | Mass bounds (MIN=100, MAX=10000) | ✅ |
+| T2.1.4 | Max simultaneous (≥16) | ✅ |
+| T2.2.1 | Inverse-square law | ✅ |
+| T2.2.2-6 | Direction, falloff, clamping, influence cutoff, multiple | ✅ |
+| T2.3.1-3 | Event horizon consumption | ✅ |
+| T2.4.1-8 | GDScript API methods | ✅ |
 
 ### Phase 3: Simulation Node (14 tests) ⚠️
 | ID | Test | Status |
 |----|------|--------|
-| T3.1.1-5 | Properties | ✅ |
+| T3.1.1-5 | Properties (grid_width, grid_height, cell_scale, simulation_paused, time_scale) | ✅ |
 | T3.2.1-8 | Element methods | ⚠️ Need radius validation |
 | T3.3.1-3 | World generation | ✅ |
 | T3.4.1-3 | Texture rendering | ✅ |
@@ -254,7 +269,8 @@ P0: Critical Fixes
 ### Phase 5: Performance (5 tests) ❌
 | ID | Test | Status |
 |----|------|--------|
-| T5.1.1-2 | Frame rate targets | ❌ Not tested |
+| T5.1.1 | 500x500 at 60+ FPS | ❌ Not tested |
+| T5.1.2 | 1000x1000 at 60+ FPS | ❌ Not tested |
 | T5.2.1-2 | Memory budget | ❌ Not tested |
 | T5.3.1-2 | Update timing | ❌ Not tested |
 
@@ -279,7 +295,7 @@ P0: Critical Fixes
 
 ## Notes
 
-- The existing implementation is feature-complete per the spec
-- Main gaps are in testing/verification rather than implementation
+- The existing implementation covers all major spec requirements
+- Main gaps are in input validation and testing/verification
 - GPU shader path is optional - ImageTexture path should handle 500x500 at 60 FPS
-- The GridRenderer class is a skeleton - integration into main simulation is optional
+- GridRenderer class in godot_extension/ is a skeleton - main rendering uses ImageTexture in FallingSandSimulation
